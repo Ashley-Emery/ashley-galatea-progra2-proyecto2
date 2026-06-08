@@ -103,7 +103,8 @@ public class FlowFreeGUI extends JFrame {
     private void crearVistaJuego() {
         juego = new FlowFreeJuego();
 
-        JPanel panelJuego = new JPanel(new BorderLayout());
+        PanelJuegoFondo panelJuego = new PanelJuegoFondo();
+        panelJuego.setLayout(new BorderLayout());
 
         lblEstado = new JLabel("", SwingConstants.CENTER);
         lblEstado.setFont(new Font("Arial", Font.BOLD, 22));
@@ -257,6 +258,28 @@ public class FlowFreeGUI extends JFrame {
         g2.drawImage(imagen.getScaledInstance(nuevoW, nuevoH, Image.SCALE_FAST), x, y, null);
     }
 
+    private class PanelJuegoFondo extends JPanel {
+
+        private BufferedImage fondo;
+
+        public PanelJuegoFondo() {
+            try {
+                fondo = ImageIO.read(new File(ASSETS_DIR + "background_puzzles.png"));
+            } catch (IOException e) {
+                fondo = null;
+            }
+        }
+
+        @Override
+        protected void paintComponent(Graphics g) {
+            super.paintComponent(g);
+
+            if (fondo != null) {
+                g.drawImage(fondo, 0, 0, getWidth(), getHeight(), null);
+            }
+        }
+    }
+
     private static class PanelTablero extends JPanel {
 
         private FlowFreeJuego juego;
@@ -275,7 +298,7 @@ public class FlowFreeGUI extends JFrame {
             this.lblEstado = lblEstado;
             this.ventana = ventana;
 
-            setBackground(new Color(245, 242, 232));
+            setOpaque(false);
 
             try {
                 fondoPuzzle = ImageIO.read(
@@ -341,7 +364,6 @@ public class FlowFreeGUI extends JFrame {
             Graphics2D g2 = (Graphics2D) g;
             g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
-            dibujarFondoTablero(g2);
             dibujarCaminos(g2);
             dibujarPuntos(g2);
         }
@@ -359,25 +381,6 @@ public class FlowFreeGUI extends JFrame {
 
             inicioX = (getWidth() - tableroAncho) / 2;
             inicioY = (getHeight() - tableroAlto) / 2;
-        }
-
-        private void dibujarFondoTablero(Graphics2D g2) {
-            int tableroAncho = tamanoCelda * juego.getColumnas();
-            int tableroAlto = tamanoCelda * juego.getFilas();
-
-            if (fondoPuzzle != null) {
-                g2.drawImage(
-                        fondoPuzzle,
-                        inicioX,
-                        inicioY,
-                        tableroAncho,
-                        tableroAlto,
-                        null
-                );
-            } else {
-                g2.setColor(new Color(224, 221, 210));
-                g2.fillRoundRect(inicioX, inicioY, tableroAncho, tableroAlto, 18, 18);
-            }
         }
 
         private void dibujarCaminos(Graphics2D g2) {
