@@ -46,10 +46,14 @@ public class FlowFreeJuego extends Puzzle {
     private HiloTiempo hiloTiempo;
     private int segundosJugados = 0;
 
-    public FlowFreeJuego() {
-        nivelActual = 1;
+    public FlowFreeJuego(int nivelInicial) {
+        nivelActual = nivelInicial;
         juegoActivo = true;
         cargarNivel(nivelActual);
+    }
+
+    public FlowFreeJuego() {
+        this(1);
     }
 
     private abstract class GrupoNiveles {

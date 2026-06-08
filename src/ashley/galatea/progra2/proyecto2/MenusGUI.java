@@ -1253,7 +1253,10 @@ public class MenusGUI extends JFrame {
             String respuesta = menus.seleccionarNivel(numero);
 
             if (respuesta.equals("Nivel iniciado.")) {
-                JOptionPane.showMessageDialog(null, "Nivel " + numero + " iniciado.");
+                FlowFreeGUI juego = new FlowFreeGUI(menus, this, numero);
+                juego.setVisible(true);
+            } else {
+                JOptionPane.showMessageDialog(null, respuesta);
             }
         });
 

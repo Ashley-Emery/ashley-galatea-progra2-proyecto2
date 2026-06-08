@@ -50,6 +50,10 @@ public class FlowFreeGUI extends JFrame {
     private CardLayout cardLayout;
     private JPanel contenedor;
 
+    private Menus menus;
+    private MenusGUI menuPrincipal;
+    private int nivelInicial;
+
     private static final String CARD_INTRO = "INTRO";
     private static final String CARD_TRANSICION = "TRANSICION";
     private static final String CARD_JUEGO = "JUEGO";
@@ -57,7 +61,15 @@ public class FlowFreeGUI extends JFrame {
     private static final String ASSETS_DIR = "src/ashley/galatea/progra2/proyecto2/assets/";
 
     public FlowFreeGUI() {
-        setTitle("Flow Free - Test");
+        this(null, null, 1);
+    }
+
+    public FlowFreeGUI(Menus menus, MenusGUI menuPrincipal, int nivelInicial) {
+        this.menus = menus;
+        this.menuPrincipal = menuPrincipal;
+        this.nivelInicial = nivelInicial;
+
+        setTitle("Flow Free");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
         Dimension screen = Toolkit.getDefaultToolkit().getScreenSize();
@@ -101,7 +113,7 @@ public class FlowFreeGUI extends JFrame {
     }
 
     private void crearVistaJuego() {
-        juego = new FlowFreeJuego();
+        juego = new FlowFreeJuego(nivelInicial);
 
         PanelJuegoFondo panelJuego = new PanelJuegoFondo();
         panelJuego.setLayout(new BorderLayout());
@@ -133,6 +145,9 @@ public class FlowFreeGUI extends JFrame {
     }
 
     private void mostrarNivelCompletado(int nivelCompletado) {
+
+        guardarProgresoNivel(nivelCompletado);
+
         String nombreImagen = "level" + nivelCompletado + "_completed.png";
 
         mostrarTransicion(nombreImagen, () -> {
@@ -452,5 +467,42 @@ public class FlowFreeGUI extends JFrame {
         private int centroY(int fila) {
             return inicioY + fila * tamanoCelda + tamanoCelda / 2;
         }
+    }
+
+    private void guardarProgresoNivel(int nivelCompletado) {
+        if (menus == null) {
+            return;
+        }
+
+        int tiempoSegundos = juego.getSegundosJugados();
+        long tiempoMinutos = tiempoSegundos / 60;
+
+        if (tiempoMinutos == 0) {
+            tiempoMinutos = 1;
+        }
+
+        int puntaje = calcularPuntaje(tiempoSegundos);
+
+        menus.completarPuzzle(nivelCompletado, puntaje, tiempoMinutos);
+
+        menus.registrarResultadoPartida(
+                true,
+                nivelCompletado,
+                puntaje,
+                tiempoSegundos,
+                "Level completed in " + tiempoSegundos + " seconds"
+        );
+    }
+
+    private int calcularPuntaje(int tiempoSegundos) {
+        int puntajeBase = 1000;
+        int penalizacion = tiempoSegundos * 5;
+        int puntajeFinal = puntajeBase - penalizacion;
+
+        if (puntajeFinal < 100) {
+            puntajeFinal = 100;
+        }
+
+        return puntajeFinal;
     }
 }

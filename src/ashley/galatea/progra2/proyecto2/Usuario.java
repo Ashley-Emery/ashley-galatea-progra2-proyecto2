@@ -225,7 +225,7 @@ public class Usuario implements Serializable {
                 nivelesCompletados = nivel;
             }
 
-            if (nivel == nivelDesbloqueado && nivelDesbloqueado < 5) {
+            if (nivel == nivelDesbloqueado && nivelDesbloqueado < 10) {
                 nivelDesbloqueado++;
             }
 
