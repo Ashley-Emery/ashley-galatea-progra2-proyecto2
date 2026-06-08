@@ -1,0 +1,453 @@
+/*
+ * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
+ * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
+ */
+package ashley.galatea.progra2.proyecto2;
+
+/**
+ *
+ * @author USER
+ */
+
+import java.awt.BasicStroke;
+import java.awt.BorderLayout;
+import java.awt.CardLayout;
+import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.Font;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.Image;
+import java.awt.Point;
+import java.awt.RenderingHints;
+import java.awt.Toolkit;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import javax.imageio.ImageIO;
+import javax.swing.BorderFactory;
+import javax.swing.JButton;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.SwingConstants;
+import javax.swing.SwingUtilities;
+import javax.swing.Timer;
+import javax.swing.border.BevelBorder;
+
+public class FlowFreeGUI extends JFrame {
+
+    private FlowFreeJuego juego;
+    private PanelTablero panelTablero;
+    private JLabel lblEstado;
+    private Timer timerGUI;
+
+    private CardLayout cardLayout;
+    private JPanel contenedor;
+
+    private static final String CARD_INTRO = "INTRO";
+    private static final String CARD_TRANSICION = "TRANSICION";
+    private static final String CARD_JUEGO = "JUEGO";
+
+    private static final String ASSETS_DIR = "src/ashley/galatea/progra2/proyecto2/assets/";
+
+    public FlowFreeGUI() {
+        setTitle("Flow Free - Test");
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+
+        Dimension screen = Toolkit.getDefaultToolkit().getScreenSize();
+
+        int width = (int) (screen.width * 0.82);
+        int height = (int) (screen.height * 0.78);
+
+        setSize(width, height);
+        setMinimumSize(new Dimension(900, 600));
+        setLocationRelativeTo(null);
+
+        cardLayout = new CardLayout();
+        contenedor = new JPanel(cardLayout);
+
+        contenedor.add(new PanelIntro(), CARD_INTRO);
+
+        add(contenedor);
+
+        cardLayout.show(contenedor, CARD_INTRO);
+    }
+
+    private void mostrarTransicion(String nombreImagen, Runnable accionDespues) {
+        PanelImagen panelTransicion = new PanelImagen(ASSETS_DIR + nombreImagen);
+        contenedor.add(panelTransicion, CARD_TRANSICION);
+        cardLayout.show(contenedor, CARD_TRANSICION);
+
+        Timer timer = new Timer(3000, e -> {
+            ((Timer) e.getSource()).stop();
+            accionDespues.run();
+        });
+
+        timer.setRepeats(false);
+        timer.start();
+    }
+
+    private void iniciarPrimerNivel() {
+        mostrarTransicion("cero_fixes.png", () -> {
+            crearVistaJuego();
+            cardLayout.show(contenedor, CARD_JUEGO);
+        });
+    }
+
+    private void crearVistaJuego() {
+        juego = new FlowFreeJuego();
+
+        JPanel panelJuego = new JPanel(new BorderLayout());
+
+        lblEstado = new JLabel("", SwingConstants.CENTER);
+        lblEstado.setFont(new Font("Arial", Font.BOLD, 22));
+        lblEstado.setBorder(BorderFactory.createEmptyBorder(15, 10, 15, 10));
+
+        panelTablero = new PanelTablero(juego, lblEstado, this);
+
+        JButton btnReiniciar = new JButton("Reiniciar");
+        btnReiniciar.setFont(new Font("Arial", Font.BOLD, 18));
+        btnReiniciar.addActionListener(e -> {
+            juego.reiniciar();
+            actualizarEstado();
+            panelTablero.repaint();
+        });
+
+        panelJuego.add(lblEstado, BorderLayout.NORTH);
+        panelJuego.add(panelTablero, BorderLayout.CENTER);
+        panelJuego.add(btnReiniciar, BorderLayout.SOUTH);
+
+        contenedor.add(panelJuego, CARD_JUEGO);
+
+        timerGUI = new Timer(500, e -> actualizarEstado());
+        timerGUI.start();
+
+        actualizarEstado();
+    }
+
+    private void mostrarNivelCompletado(int nivelCompletado) {
+        String nombreImagen = "level" + nivelCompletado + "_completed.png";
+
+        mostrarTransicion(nombreImagen, () -> {
+            if (juego.haySiguienteNivel()) {
+                juego.avanzarNivel();
+                actualizarEstado();
+                panelTablero.repaint();
+                cardLayout.show(contenedor, CARD_JUEGO);
+            } else {
+                cardLayout.show(contenedor, CARD_JUEGO);
+                JOptionPane.showMessageDialog(
+                        this,
+                        "All levels completed!",
+                        "Game Completed",
+                        JOptionPane.INFORMATION_MESSAGE
+                );
+            }
+        });
+    }
+
+    private void actualizarEstado() {
+        if (juego == null || lblEstado == null) {
+            return;
+        }
+
+        lblEstado.setText(
+                "Level " + juego.getNivelActual()
+                + " - " + juego.getNombreGrupoNivel()
+                + " | Time: " + juego.getSegundosJugados() + "s"
+        );
+    }
+
+    public static void abrir() {
+        SwingUtilities.invokeLater(() -> {
+            FlowFreeGUI ventana = new FlowFreeGUI();
+            ventana.setVisible(true);
+        });
+    }
+
+    private class PanelIntro extends JPanel {
+
+        private BufferedImage imagenFondo;
+
+        public PanelIntro() {
+            setLayout(new BorderLayout());
+            setBackground(Color.BLACK);
+
+            try {
+                imagenFondo = ImageIO.read(new File(ASSETS_DIR + "peters_message.png"));
+            } catch (IOException e) {
+                imagenFondo = null;
+            }
+
+            JPanel panelBoton = new JPanel();
+            panelBoton.setOpaque(false);
+            panelBoton.setBorder(BorderFactory.createEmptyBorder(0, 0, 35, 0));
+
+            JButton btnContinue = new JButton("CONTINUE");
+            btnContinue.setFont(new Font("Monospaced", Font.BOLD, 22));
+            btnContinue.setForeground(Color.DARK_GRAY);
+            btnContinue.setBackground(new Color(0xD4D4D4));
+            btnContinue.setFocusPainted(false);
+            btnContinue.setBorder(BorderFactory.createBevelBorder(BevelBorder.RAISED));
+            btnContinue.setPreferredSize(new Dimension(180, 50));
+
+            btnContinue.addActionListener(e -> iniciarPrimerNivel());
+
+            panelBoton.add(btnContinue);
+
+            add(panelBoton, BorderLayout.SOUTH);
+        }
+
+        @Override
+        protected void paintComponent(Graphics g) {
+            super.paintComponent(g);
+            dibujarImagenEscalada(g, imagenFondo);
+        }
+    }
+
+    private class PanelImagen extends JPanel {
+
+        private BufferedImage imagen;
+
+        public PanelImagen(String rutaImagen) {
+            setBackground(Color.BLACK);
+
+            try {
+                imagen = ImageIO.read(new File(rutaImagen));
+            } catch (IOException e) {
+                imagen = null;
+            }
+        }
+
+        @Override
+        protected void paintComponent(Graphics g) {
+            super.paintComponent(g);
+            dibujarImagenEscalada(g, imagen);
+        }
+    }
+
+    private void dibujarImagenEscalada(Graphics g, BufferedImage imagen) {
+        if (imagen == null) {
+            return;
+        }
+
+        Graphics2D g2 = (Graphics2D) g;
+        g2.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR);
+
+        int panelW = getWidth();
+        int panelH = getHeight();
+
+        int imgW = imagen.getWidth();
+        int imgH = imagen.getHeight();
+
+        double escala = Math.min((double) panelW / imgW, (double) panelH / imgH);
+
+        int nuevoW = (int) (imgW * escala);
+        int nuevoH = (int) (imgH * escala);
+
+        int x = (panelW - nuevoW) / 2;
+        int y = (panelH - nuevoH) / 2;
+
+        g2.drawImage(imagen.getScaledInstance(nuevoW, nuevoH, Image.SCALE_FAST), x, y, null);
+    }
+
+    private static class PanelTablero extends JPanel {
+
+        private FlowFreeJuego juego;
+        private JLabel lblEstado;
+        private FlowFreeGUI ventana;
+
+        private int margen;
+        private int tamanoCelda;
+        private int inicioX;
+        private int inicioY;
+
+        private BufferedImage fondoPuzzle;
+
+        public PanelTablero(FlowFreeJuego juego, JLabel lblEstado, FlowFreeGUI ventana) {
+            this.juego = juego;
+            this.lblEstado = lblEstado;
+            this.ventana = ventana;
+
+            setBackground(new Color(245, 242, 232));
+
+            try {
+                fondoPuzzle = ImageIO.read(
+                        new File("src/ashley/galatea/progra2/proyecto2/assets/background_puzzles.png")
+                );
+            } catch (IOException e) {
+                fondoPuzzle = null;
+            }
+
+            MouseAdapter mouse = new MouseAdapter() {
+                @Override
+                public void mousePressed(MouseEvent e) {
+                    Point celda = obtenerCelda(e.getX(), e.getY());
+
+                    if (celda != null) {
+                        juego.iniciarCamino(celda.y, celda.x);
+                        repaint();
+                    }
+                }
+
+                @Override
+                public void mouseDragged(MouseEvent e) {
+                    Point celda = obtenerCelda(e.getX(), e.getY());
+
+                    if (celda != null) {
+                        juego.arrastrarCamino(celda.y, celda.x);
+                        repaint();
+                    }
+                }
+
+                @Override
+                public void mouseReleased(MouseEvent e) {
+                    juego.terminarCamino();
+
+                    if (juego.hayVictoria()) {
+                        int nivelCompletado = juego.getNivelActual();
+                        int tiempoFinal = juego.getSegundosJugados();
+
+                        JOptionPane.showMessageDialog(
+                                PanelTablero.this,
+                                "Level " + nivelCompletado + " Completed!\nTime: " + tiempoFinal + " seconds",
+                                "Level Completed",
+                                JOptionPane.INFORMATION_MESSAGE
+                        );
+
+                        ventana.mostrarNivelCompletado(nivelCompletado);
+                    }
+
+                    repaint();
+                }
+            };
+
+            addMouseListener(mouse);
+            addMouseMotionListener(mouse);
+        }
+
+        @Override
+        protected void paintComponent(Graphics g) {
+            super.paintComponent(g);
+
+            calcularMedidas();
+
+            Graphics2D g2 = (Graphics2D) g;
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+            dibujarFondoTablero(g2);
+            dibujarCaminos(g2);
+            dibujarPuntos(g2);
+        }
+
+        private void calcularMedidas() {
+            margen = 40;
+            int espacioDisponible = Math.min(getWidth(), getHeight()) - margen * 2;
+
+            int mayorDimension = Math.max(juego.getFilas(), juego.getColumnas());
+
+            tamanoCelda = espacioDisponible / mayorDimension;
+
+            int tableroAncho = tamanoCelda * juego.getColumnas();
+            int tableroAlto = tamanoCelda * juego.getFilas();
+
+            inicioX = (getWidth() - tableroAncho) / 2;
+            inicioY = (getHeight() - tableroAlto) / 2;
+        }
+
+        private void dibujarFondoTablero(Graphics2D g2) {
+            int tableroAncho = tamanoCelda * juego.getColumnas();
+            int tableroAlto = tamanoCelda * juego.getFilas();
+
+            if (fondoPuzzle != null) {
+                g2.drawImage(
+                        fondoPuzzle,
+                        inicioX,
+                        inicioY,
+                        tableroAncho,
+                        tableroAlto,
+                        null
+                );
+            } else {
+                g2.setColor(new Color(224, 221, 210));
+                g2.fillRoundRect(inicioX, inicioY, tableroAncho, tableroAlto, 18, 18);
+            }
+        }
+
+        private void dibujarCaminos(Graphics2D g2) {
+            HashMap<Integer, ArrayList<Point>> caminos = juego.getCaminos();
+
+            for (Integer color : caminos.keySet()) {
+                ArrayList<Point> camino = caminos.get(color);
+
+                if (camino.size() < 2) {
+                    continue;
+                }
+
+                g2.setColor(juego.getColorJava(color));
+                g2.setStroke(new BasicStroke(tamanoCelda / 2, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+
+                for (int i = 0; i < camino.size() - 1; i++) {
+                    Point a = camino.get(i);
+                    Point b = camino.get(i + 1);
+
+                    g2.drawLine(centroX(a.x), centroY(a.y), centroX(b.x), centroY(b.y));
+                }
+            }
+        }
+
+        private void dibujarPuntos(Graphics2D g2) {
+            int tamanoPunto = (int) (tamanoCelda * 0.68);
+            int arco = tamanoPunto / 3;
+
+            for (int fila = 0; fila < juego.getFilas(); fila++) {
+                for (int columna = 0; columna < juego.getColumnas(); columna++) {
+                    int color = juego.getPunto(fila, columna);
+
+                    if (color != FlowFreeJuego.VACIO) {
+                        int x = inicioX + columna * tamanoCelda + (tamanoCelda - tamanoPunto) / 2;
+                        int y = inicioY + fila * tamanoCelda + (tamanoCelda - tamanoPunto) / 2;
+
+                        g2.setColor(new Color(0, 0, 0, 45));
+                        g2.fillRoundRect(x, y + 6, tamanoPunto, tamanoPunto, arco, arco);
+
+                        g2.setColor(juego.getColorJava(color));
+                        g2.fillRoundRect(x, y, tamanoPunto, tamanoPunto, arco, arco);
+                    }
+                }
+            }
+        }
+
+        private Point obtenerCelda(int mouseX, int mouseY) {
+            int tableroAncho = tamanoCelda * juego.getColumnas();
+            int tableroAlto = tamanoCelda * juego.getFilas();
+
+            if (mouseX < inicioX || mouseX >= inicioX + tableroAncho) {
+                return null;
+            }
+
+            if (mouseY < inicioY || mouseY >= inicioY + tableroAlto) {
+                return null;
+            }
+
+            int columna = (mouseX - inicioX) / tamanoCelda;
+            int fila = (mouseY - inicioY) / tamanoCelda;
+
+            return new Point(columna, fila);
+        }
+
+        private int centroX(int columna) {
+            return inicioX + columna * tamanoCelda + tamanoCelda / 2;
+        }
+
+        private int centroY(int fila) {
+            return inicioY + fila * tamanoCelda + tamanoCelda / 2;
+        }
+    }
+}
