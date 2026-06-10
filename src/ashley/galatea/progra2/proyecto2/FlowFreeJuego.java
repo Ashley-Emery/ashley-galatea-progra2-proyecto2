@@ -34,6 +34,7 @@ public class FlowFreeJuego extends Puzzle {
 
     private int[][] puntos;
     private int[][] ocupadas;
+    private int ultimoColorModificado = VACIO;
 
     private HashMap<Integer, ArrayList<Point>> caminos = new HashMap<>();
 
@@ -715,6 +716,7 @@ public class FlowFreeJuego extends Puzzle {
         Point inicio = new Point(columna, fila);
         camino.add(inicio);
         ocupadas[fila][columna] = colorActivo;
+        ultimoColorModificado = colorActivo;
     }
 
     @Override
@@ -765,6 +767,7 @@ public class FlowFreeJuego extends Puzzle {
 
         camino.add(nuevo);
         ocupadas[fila][columna] = colorActivo;
+        ultimoColorModificado = colorActivo;
     }
 
     @Override
@@ -911,6 +914,40 @@ public class FlowFreeJuego extends Puzzle {
             default:
                 return Color.LIGHT_GRAY;
         }
+    }
+
+    public void deshacerUltimoMovimiento() {
+        if (ultimoColorModificado == VACIO) {
+            return;
+        }
+
+        ArrayList<Point> camino = caminos.get(ultimoColorModificado);
+
+        if (camino == null || camino.size() <= 1) {
+            return;
+        }
+
+        Point ultimo = camino.remove(camino.size() - 1);
+        ocupadas[ultimo.y][ultimo.x] = VACIO;
+        victoria = false;
+    }
+
+    public boolean caminoActivoCompleto() {
+        if (colorActivo == VACIO) {
+            return false;
+        }
+
+        ArrayList<Point> camino = caminos.get(colorActivo);
+
+        if (camino == null || camino.size() < 2) {
+            return false;
+        }
+
+        Point inicio = camino.get(0);
+        Point fin = camino.get(camino.size() - 1);
+
+        return puntos[inicio.y][inicio.x] == colorActivo
+                && puntos[fin.y][fin.x] == colorActivo;
     }
     
 }

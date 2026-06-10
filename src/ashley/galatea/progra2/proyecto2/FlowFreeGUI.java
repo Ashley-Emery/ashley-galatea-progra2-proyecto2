@@ -39,6 +39,9 @@ import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 import javax.swing.Timer;
 import javax.swing.border.BevelBorder;
+import javax.swing.Box;
+import javax.swing.BoxLayout;
+import javax.swing.ImageIcon;
 
 public class FlowFreeGUI extends JFrame {
 
@@ -58,6 +61,8 @@ public class FlowFreeGUI extends JFrame {
     private static final String CARD_TRANSICION = "TRANSICION";
     private static final String CARD_JUEGO = "JUEGO";
 
+    private AudioManager audioManager;
+
     private static final String ASSETS_DIR = "src/ashley/galatea/progra2/proyecto2/assets/";
 
     public FlowFreeGUI() {
@@ -68,6 +73,7 @@ public class FlowFreeGUI extends JFrame {
         this.menus = menus;
         this.menuPrincipal = menuPrincipal;
         this.nivelInicial = nivelInicial;
+        this.audioManager = new AudioManager(menus);
 
         setTitle("Flow Free");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -120,6 +126,7 @@ public class FlowFreeGUI extends JFrame {
 
         lblEstado = new JLabel("", SwingConstants.CENTER);
         lblEstado.setFont(new Font("Arial", Font.BOLD, 22));
+        lblEstado.setForeground(new Color(0xFF03FF));
         lblEstado.setBorder(BorderFactory.createEmptyBorder(15, 10, 15, 10));
 
         panelTablero = new PanelTablero(juego, lblEstado, this);
@@ -134,7 +141,7 @@ public class FlowFreeGUI extends JFrame {
 
         panelJuego.add(lblEstado, BorderLayout.NORTH);
         panelJuego.add(panelTablero, BorderLayout.CENTER);
-        panelJuego.add(btnReiniciar, BorderLayout.SOUTH);
+        panelJuego.add(crearBarraLateral(), BorderLayout.WEST);
 
         contenedor.add(panelJuego, CARD_JUEGO);
 
@@ -142,6 +149,101 @@ public class FlowFreeGUI extends JFrame {
         timerGUI.start();
 
         actualizarEstado();
+        audioManager.iniciarMusicaPartida();
+    }
+
+    private JPanel crearBarraLateral() {
+        JPanel barra = new JPanel();
+        barra.setBackground(new Color(0x04054D));
+        barra.setPreferredSize(new Dimension(80, 0));
+        barra.setLayout(new BoxLayout(barra, BoxLayout.Y_AXIS));
+        barra.setBorder(BorderFactory.createEmptyBorder(25, 14, 25, 14));
+
+        JButton btnVolume = crearBotonBarra("volume.png", "SFX Volume");
+        JButton btnSoundOff = crearBotonBarra("sound_off.png", "Mute Sound");
+        JButton btnMusic = crearBotonBarra("music.png", "Music Volume");
+        JButton btnHome = crearBotonBarra("home.png", "Home");
+        JButton btnRestart = crearBotonBarra("restart_level.png", "Restart Level");
+        JButton btnReverse = crearBotonBarra("reverse_one_move.png", "Undo Last Move");
+
+        btnVolume.addActionListener(e -> audioManager.mostrarControlVolumenSFX(this));
+
+        btnSoundOff.addActionListener(e -> audioManager.alternarMuteGeneral());
+
+        btnMusic.addActionListener(e -> audioManager.mostrarControlVolumenMusica(this));
+
+        btnHome.addActionListener(e -> confirmarSalidaAlMenu());
+
+        btnRestart.addActionListener(e -> {
+            juego.reiniciar();
+            actualizarEstado();
+            panelTablero.repaint();
+        });
+
+        btnReverse.addActionListener(e -> {
+            juego.deshacerUltimoMovimiento();
+            panelTablero.repaint();
+        });
+
+        barra.add(btnVolume);
+        barra.add(Box.createVerticalStrut(10));
+        barra.add(btnSoundOff);
+        barra.add(Box.createVerticalStrut(10));
+        barra.add(btnMusic);
+
+        barra.add(Box.createVerticalGlue());
+
+        barra.add(btnHome);
+        barra.add(Box.createVerticalStrut(10));
+        barra.add(btnRestart);
+        barra.add(Box.createVerticalStrut(10));
+        barra.add(btnReverse);
+
+        return barra;
+    }
+
+    private JButton crearBotonBarra(String nombreImagen, String tooltip) {
+        String ruta = ASSETS_DIR + "buttons/" + nombreImagen;
+
+        ImageIcon iconoOriginal = new ImageIcon(ruta);
+        Image imagenEscalada = iconoOriginal.getImage().getScaledInstance(52, 52, Image.SCALE_SMOOTH);
+        ImageIcon icono = new ImageIcon(imagenEscalada);
+
+        JButton boton = new JButton(icono);
+        boton.setToolTipText(tooltip);
+
+        boton.setPreferredSize(new Dimension(52, 52));
+        boton.setMaximumSize(new Dimension(52, 52));
+        boton.setMinimumSize(new Dimension(52, 52));
+
+        boton.setBorderPainted(false);
+        boton.setContentAreaFilled(false);
+        boton.setFocusPainted(false);
+        boton.setOpaque(false);
+        boton.setMargin(new java.awt.Insets(0, 0, 0, 0));
+        boton.setBorder(null);
+
+        return boton;
+    }
+
+    private void confirmarSalidaAlMenu() {
+        int respuesta = JOptionPane.showConfirmDialog(
+                this,
+                "Do you want to abandon this game?\nYour progress for this unfinished level will not be saved.",
+                "Leave Game?",
+                JOptionPane.OK_CANCEL_OPTION,
+                JOptionPane.WARNING_MESSAGE
+        );
+
+        if (respuesta == JOptionPane.OK_OPTION) {
+            if (timerGUI != null) {
+                timerGUI.stop();
+            }
+
+            audioManager.detenerMusica();
+
+            dispose();
+        }
     }
 
     private void mostrarNivelCompletado(int nivelCompletado) {
@@ -329,6 +431,10 @@ public class FlowFreeGUI extends JFrame {
                     Point celda = obtenerCelda(e.getX(), e.getY());
 
                     if (celda != null) {
+                        if (juego.getPunto(celda.y, celda.x) != FlowFreeJuego.VACIO) {
+                            ventana.audioManager.reproducirSFX("juniorsoundays-ui-sound-12-527794.mp3");
+                        }
+
                         juego.iniciarCamino(celda.y, celda.x);
                         repaint();
                     }
@@ -346,7 +452,14 @@ public class FlowFreeGUI extends JFrame {
 
                 @Override
                 public void mouseReleased(MouseEvent e) {
+
+                    boolean lineaCompleta = juego.caminoActivoCompleto();
+
                     juego.terminarCamino();
+
+                    if (lineaCompleta) {
+                        ventana.audioManager.reproducirSFX("juniorsoundays-ui-sound-12-527794.mp3");
+                    }
 
                     if (juego.hayVictoria()) {
                         int nivelCompletado = juego.getNivelActual();

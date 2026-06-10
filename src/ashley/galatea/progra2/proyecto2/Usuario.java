@@ -28,6 +28,11 @@ public class Usuario implements Serializable {
 
     private String avatar;
     private int volumen;
+    private int volumenSFX;
+    private int volumenMusica;
+    private boolean sfxActivo;
+    private boolean musicaActiva;
+    private double posicionMusicaSegundos;
     private String idioma;
     private String controles;
 
@@ -59,6 +64,11 @@ public class Usuario implements Serializable {
         this.ultimoLogout = null;
 
         this.volumen = 50;
+        this.volumenSFX = 80;
+        this.volumenMusica = 60;
+        this.sfxActivo = true;
+        this.musicaActiva = true;
+        this.posicionMusicaSegundos = 0;
         this.idioma = "Español";
         this.controles = "Mouse";
 
@@ -249,5 +259,33 @@ public class Usuario implements Serializable {
 
     public void eliminarAmigoRival(String username) {
         amigosRivales.remove(username);
+    }
+
+    public int getVolumenSFX() {
+        return volumenSFX;
+    }
+
+    public int getVolumenMusica() {
+        return volumenMusica;
+    }
+
+    public boolean isSfxActivo() {
+        return sfxActivo;
+    }
+
+    public boolean isMusicaActiva() {
+        return musicaActiva;
+    }
+
+    public double getPosicionMusicaSegundos() {
+        return posicionMusicaSegundos;
+    }
+
+    public void actualizarConfigAudio(int volumenSFX, int volumenMusica, boolean sfxActivo, boolean musicaActiva, double posicionMusicaSegundos) {
+        this.volumenSFX = volumenSFX;
+        this.volumenMusica = volumenMusica;
+        this.sfxActivo = sfxActivo;
+        this.musicaActiva = musicaActiva;
+        this.posicionMusicaSegundos = posicionMusicaSegundos;
     }
 }

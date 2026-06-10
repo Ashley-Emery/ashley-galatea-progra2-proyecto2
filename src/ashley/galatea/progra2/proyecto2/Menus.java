@@ -865,5 +865,23 @@ public class Menus {
         return "Perfil actualizado correctamente.";
     }
 
+    public String actualizarConfigAudio(int volumenSFX, int volumenMusica, boolean sfxActivo, boolean musicaActiva, double posicionMusicaSegundos) {
+        if (usuarioActual == null) {
+            return "Debe iniciar sesión.";
+        }
+
+        usuarioActual.actualizarConfigAudio(
+                volumenSFX,
+                volumenMusica,
+                sfxActivo,
+                musicaActiva,
+                posicionMusicaSegundos
+        );
+
+        guardarUsuario(usuarioActual);
+
+        return "Configuración de audio actualizada.";
+    }
+
 
 }
