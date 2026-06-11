@@ -54,6 +54,8 @@ public class Usuario implements Serializable {
     private int retosGanados;
     private String avatarColorHex;
 
+    private boolean estadoCuentaInicializado;
+
     public Usuario(String username, String passwordHash, String nombreCompleto) {
         this.username = username;
         this.passwordHash = passwordHash;
@@ -92,6 +94,7 @@ public class Usuario implements Serializable {
         this.avatarColorHex = colores[(int)(Math.random() * colores.length)];
 
         this.cuentaActiva = true;
+        this.estadoCuentaInicializado = true;
         this.retosGanados = 0;
 
 
@@ -107,6 +110,10 @@ public class Usuario implements Serializable {
 
     public void setPasswordHash(String passwordHash) {
         this.passwordHash = passwordHash;
+    }
+
+    public void setIdioma(String idioma) {
+        this.idioma = idioma;
     }
 
     public String getNombreCompleto() {
@@ -208,6 +215,11 @@ public class Usuario implements Serializable {
         this.avatarColorHex = avatarColorHex;
     }
 
+    public void setCuentaActiva(boolean cuentaActiva) {
+        this.cuentaActiva = cuentaActiva;
+        this.estadoCuentaInicializado = true;
+    }
+
     public void iniciarSesion() {
         ultimaSesion = new Date();
     }
@@ -287,5 +299,21 @@ public class Usuario implements Serializable {
         this.sfxActivo = sfxActivo;
         this.musicaActiva = musicaActiva;
         this.posicionMusicaSegundos = posicionMusicaSegundos;
+    }
+
+    public boolean isEstadoCuentaInicializado() {
+        return estadoCuentaInicializado;
+    }
+
+    public void setEstadoCuentaInicializado(boolean estadoCuentaInicializado) {
+        this.estadoCuentaInicializado = estadoCuentaInicializado;
+    }
+
+    public void sumarPuntuacion(int puntos) {
+        puntuacionGeneral += puntos;
+    }
+
+    public void sumarRetoGanado() {
+        retosGanados++;
     }
 }

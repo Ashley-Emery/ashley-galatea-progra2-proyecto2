@@ -27,6 +27,7 @@ public class Menus {
 
     private final String RUTA_USUARIOS = "data/usuarios/";
     private Usuario usuarioActual;
+    private String idiomaSeleccionadoTemporal = null;
 
     public Menus() {
         File carpeta = new File(RUTA_USUARIOS);
@@ -50,6 +51,12 @@ public class Menus {
 
             Usuario usuario = (Usuario) in.readObject();
             in.close();
+
+            if (!usuario.isEstadoCuentaInicializado()) {
+                usuario.setCuentaActiva(true);
+                usuario.setEstadoCuentaInicializado(true);
+                guardarUsuario(usuario);
+            }
 
             return usuario;
 
@@ -191,7 +198,7 @@ public class Menus {
     }
 
     // =========================================================
-    // USUARIO Y PASSWORD PARA LOG IN
+    // USUARIO Y PASSWORD - ADMINISTRAR MI CUENTA
     // =========================================================
 
     public String crearUsuario(String username, String password, String nombreCompleto) {
@@ -213,6 +220,10 @@ public class Menus {
 
         String hash = generarHash(password);
         Usuario nuevo = new Usuario(username, hash, nombreCompleto.trim());
+
+        if (idiomaSeleccionadoTemporal != null) {
+            nuevo.setIdioma(idiomaSeleccionadoTemporal);
+        }
 
         guardarUsuario(nuevo);
         guardarActividad(nuevo.getUsername(), "account_activity.dat", "Account created and registered");
@@ -239,12 +250,18 @@ public class Menus {
             return "Contraseña incorrecta.";
         }
 
+        if (!usuario.isCuentaActiva()) {
+            return "Account disabled. To proceed reactivate your account.";
+        }
+
         usuario.iniciarSesion();
+
         usuarioActual = usuario;
+        aplicarIdiomaSeleccionadoAlUsuarioActual();
         guardarUsuario(usuarioActual);
         registrarAccountActivity("User logged in");
 
-        return "Login correcto.";
+        return "Welcome";
     }
 
     public String logout() {
@@ -272,6 +289,12 @@ public class Menus {
             return "La contraseña actual es incorrecta.";
         }
 
+        String hashNueva = generarHash(passwordNueva);
+
+        if (usuarioActual.getPasswordHash().equals(hashNueva)) {
+            return "La nueva contraseña no puede ser igual a la contraseña actual.";
+        }
+
         String validacion = validarPassword(passwordNueva);
 
         if (!validacion.equals("OK")) {
@@ -280,6 +303,8 @@ public class Menus {
 
         usuarioActual.setPasswordHash(generarHash(passwordNueva));
         guardarUsuario(usuarioActual);
+
+        registrarAccountActivity("User rotated password");
 
         return "Contraseña cambiada correctamente.";
     }
@@ -358,6 +383,106 @@ public class Menus {
         }
 
         return false;
+    }
+
+    public String desactivarCuentaActual() {
+        if (usuarioActual == null) {
+            return "Debe iniciar sesión.";
+        }
+
+        registrarAccountActivity("User disabled account");
+
+        usuarioActual.setCuentaActiva(false);
+        usuarioActual.cerrarSesion();
+        guardarUsuario(usuarioActual);
+
+        usuarioActual = null;
+
+        return "Account disabled successfully.";
+    }
+
+    public String reactivarCuenta(String username, String password) {
+        username = limpiarTexto(username);
+
+        if (!existeUsuario(username)) {
+            return "El usuario no existe.";
+        }
+
+        Usuario usuario = cargarUsuario(username);
+
+        if (usuario == null) {
+            return "No se pudo cargar el usuario.";
+        }
+
+        String hashIngresado = generarHash(password);
+
+        if (!usuario.getPasswordHash().equals(hashIngresado)) {
+            return "Contraseña incorrecta.";
+        }
+
+        usuario.setCuentaActiva(true);
+        usuario.iniciarSesion();
+
+        usuarioActual = usuario;
+        guardarUsuario(usuarioActual);
+        registrarAccountActivity("User restored account");
+
+        return "Account restored successfully.";
+    }
+
+    public String eliminarCuentaActual() {
+        if (usuarioActual == null) {
+            return "Debe iniciar sesión.";
+        }
+
+        String usernameEliminado = usuarioActual.getUsername();
+
+        limpiarUsuarioEliminadoDeOtrosUsuarios(usernameEliminado);
+
+        File carpetaUsuario = new File(RUTA_USUARIOS + usernameEliminado);
+
+        usuarioActual = null;
+
+        boolean eliminado = eliminarCarpetaRecursiva(carpetaUsuario);
+
+        if (eliminado) {
+            return "Account deleted successfully.";
+        }
+
+        return "No se pudo eliminar la cuenta completamente.";
+    }
+
+    private void limpiarUsuarioEliminadoDeOtrosUsuarios(String usernameEliminado) {
+        ArrayList<Usuario> usuarios = obtenerUsuarios();
+
+        for (int i = 0; i < usuarios.size(); i++) {
+            Usuario usuario = usuarios.get(i);
+
+            if (!usuario.getUsername().equals(usernameEliminado)) {
+                usuario.eliminarAmigoRival(usernameEliminado);
+                guardarUsuario(usuario);
+            }
+        }
+    }
+
+    private boolean eliminarCarpetaRecursiva(File archivo) {
+        if (archivo == null || !archivo.exists()) {
+            return true;
+        }
+
+        if (archivo.isDirectory()) {
+            File[] archivos = archivo.listFiles();
+
+            if (archivos != null) {
+                for (int i = 0; i < archivos.length; i++) {
+                    if (!eliminarCarpetaRecursiva(archivos[i])) {
+                        return false;
+                    }
+                }
+            }
+        }
+
+        return archivo.delete();
     }
 
     // =========================================================
@@ -576,13 +701,13 @@ public class Menus {
             return oponentes;
         }
 
-        ArrayList<Usuario> usuarios = obtenerUsuarios();
+        ArrayList<String> amigos = usuarioActual.getAmigosRivales();
 
-        for (int i = 0; i < usuarios.size(); i++) {
-            String username = usuarios.get(i).getUsername();
+        for (int i = 0; i < amigos.size(); i++) {
+            String usernameAmigo = limpiarTexto(amigos.get(i));
 
-            if (!username.equals(usuarioActual.getUsername())) {
-                oponentes.add(username);
+            if (existeUsuario(usernameAmigo)) {
+                oponentes.add(usernameAmigo);
             }
         }
 
@@ -846,6 +971,77 @@ public class Menus {
         return "Avatar cambiado correctamente.";
     }
 
+    public ArrayList<String> obtenerAvataresDisponibles() {
+        ArrayList<String> avatares = new ArrayList<String>();
+
+        for (int i = 1; i <= 21; i++) {
+            avatares.add("avatar_" + i + ".png");
+        }
+
+        return avatares;
+    }
+
+    public ArrayList<String> obtenerColoresAvatarDisponibles() {
+        ArrayList<String> colores = new ArrayList<String>();
+
+        colores.add("#a2b794");
+        colores.add("#c893c9");
+        colores.add("#d99b18");
+        colores.add("#b4b4b4");
+        colores.add("#205c97");
+
+        return colores;
+    }
+
+    public String obtenerAvatarActual() {
+        if (usuarioActual == null || usuarioActual.getAvatar() == null) {
+            return "avatar_1.png";
+        }
+
+        return usuarioActual.getAvatar();
+    }
+
+    public String obtenerColorAvatarActual() {
+        if (usuarioActual == null || usuarioActual.getAvatarColorHex() == null) {
+            return "#a2b794";
+        }
+
+        return usuarioActual.getAvatarColorHex();
+    }
+
+    public String obtenerRutaAvatar(String avatar) {
+        return "src/ashley/galatea/progra2/proyecto2/assets/" + avatar;
+    }
+
+    public String guardarAvatarPerfil(String avatar, String colorHex) {
+        if (usuarioActual == null) {
+            return "Debe iniciar sesión.";
+        }
+
+        if (!obtenerAvataresDisponibles().contains(avatar)) {
+            return "Avatar inválido.";
+        }
+
+        if (!obtenerColoresAvatarDisponibles().contains(colorHex)) {
+            return "Color inválido.";
+        }
+
+        boolean cambioAvatar = !usuarioActual.getAvatar().equals(avatar);
+        boolean cambioColor = !usuarioActual.getAvatarColorHex().equals(colorHex);
+
+        if (!cambioAvatar && !cambioColor) {
+            return "No avatar changes detected.";
+        }
+
+        usuarioActual.setAvatar(avatar);
+        usuarioActual.setAvatarColorHex(colorHex);
+        guardarUsuario(usuarioActual);
+
+        registrarAccountActivity("User changed avatar");
+
+        return "Avatar saved successfully.";
+    }
+
     // =========================================================
     // CONFIG PERSISTENTE DEL UI DEL USER
     // =========================================================
@@ -883,5 +1079,104 @@ public class Menus {
         return "Configuración de audio actualizada.";
     }
 
+    public void seleccionarIdiomaTemporal(String idioma) {
+        if (idioma == null) {
+            idiomaSeleccionadoTemporal = null;
+            return;
+        }
+
+        if (idioma.equalsIgnoreCase("English")) {
+            idiomaSeleccionadoTemporal = "English";
+        } else if (idioma.equalsIgnoreCase("Spanish")) {
+            idiomaSeleccionadoTemporal = "Spanish";
+        }
+    }
+
+    public void omitirSeleccionIdiomaTemporal() {
+        idiomaSeleccionadoTemporal = null;
+    }
+
+    public boolean idiomaTemporalSeleccionado() {
+        return idiomaSeleccionadoTemporal != null;
+    }
+
+    private void aplicarIdiomaSeleccionadoAlUsuarioActual() {
+        if (usuarioActual != null && idiomaSeleccionadoTemporal != null) {
+            usuarioActual.setIdioma(idiomaSeleccionadoTemporal);
+            guardarUsuario(usuarioActual);
+        }
+    }
+
+    public String getIdiomaSeleccionadoTemporal() {
+        return idiomaSeleccionadoTemporal;
+    }
+
+    // =========================================================
+    // PUNTUACION - PUNTAJE NIVELES Y CHALLENGES
+    // =========================================================
+
+    public int calcularPuntajeNivel(int nivel) {
+        if (nivel >= 1 && nivel <= 2) {
+            return 50;
+        }
+
+        if (nivel >= 3 && nivel <= 4) {
+            return 100;
+        }
+
+        if (nivel >= 5 && nivel <= 6) {
+            return 150;
+        }
+
+        if (nivel >= 7 && nivel <= 8) {
+            return 200;
+        }
+
+        if (nivel >= 9 && nivel <= 10) {
+            return 250;
+        }
+
+        return 0;
+    }
+
+    public int obtenerNumeroDificultadChallenge(String dificultad) {
+        if (dificultad == null) {
+            return 1;
+        }
+
+        dificultad = dificultad.toUpperCase();
+
+        if (dificultad.equals("NEON CIRCUIT")) {
+            return 1;
+        }
+
+        if (dificultad.equals("POWER GRID")) {
+            return 2;
+        }
+
+        if (dificultad.equals("VOLTAGE RUN")) {
+            return 3;
+        }
+
+        if (dificultad.equals("ELECTRIC DRIFT")) {
+            return 4;
+        }
+
+        if (dificultad.equals("OVERLOAD")) {
+            return 5;
+        }
+
+        return 1;
+    }
+
+    public int calcularPuntajeChallenge(String dificultad, boolean ganador) {
+        int puntos = obtenerNumeroDificultadChallenge(dificultad) * 50;
+
+        if (ganador) {
+            puntos += 50;
+        }
+
+        return puntos;
+    }
 
 }

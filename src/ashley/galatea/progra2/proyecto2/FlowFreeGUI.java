@@ -594,7 +594,7 @@ public class FlowFreeGUI extends JFrame {
             tiempoMinutos = 1;
         }
 
-        int puntaje = calcularPuntaje(tiempoSegundos);
+        int puntaje = menus.calcularPuntajeNivel(nivelCompletado);
 
         menus.completarPuzzle(nivelCompletado, puntaje, tiempoMinutos);
 
@@ -605,17 +605,5 @@ public class FlowFreeGUI extends JFrame {
                 tiempoSegundos,
                 "Level completed in " + tiempoSegundos + " seconds"
         );
-    }
-
-    private int calcularPuntaje(int tiempoSegundos) {
-        int puntajeBase = 1000;
-        int penalizacion = tiempoSegundos * 5;
-        int puntajeFinal = puntajeBase - penalizacion;
-
-        if (puntajeFinal < 100) {
-            puntajeFinal = 100;
-        }
-
-        return puntajeFinal;
     }
 }

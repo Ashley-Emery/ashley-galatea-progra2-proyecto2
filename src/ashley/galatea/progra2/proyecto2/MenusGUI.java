@@ -15,6 +15,15 @@ import java.awt.event.*;
 import java.io.File;
 import java.util.ArrayList;
 
+import javafx.application.Platform;
+import javafx.embed.swing.JFXPanel;
+import javafx.scene.Scene;
+import javafx.scene.media.Media;
+import javafx.scene.media.MediaPlayer;
+import javafx.scene.media.MediaView;
+import javafx.scene.layout.StackPane;
+import java.io.File;
+
 public class MenusGUI extends JFrame {
 
     private CardLayout cardLayout;
@@ -22,6 +31,8 @@ public class MenusGUI extends JFrame {
     private Menus menus;
     private Font arcadeFont;
     
+    private final String CARD_LOADING = "Loading";
+    private final String CARD_LANGUAGE = "Language";
     private final String CARD_MENU_INICIO = "Menu Inicio";
     private final String CARD_LOGIN = "Log In";
     private final String CARD_SIGNIN = "Sign In";
@@ -35,6 +46,12 @@ public class MenusGUI extends JFrame {
     private final String CARD_CHALLENGE = "Challenge";
     private final String CARD_MY_ACTIVITY = "My Activity";
     private final String CARD_FIND_FRIENDS = "Find Friends";
+
+    private final String CARD_DISABLE_ACCOUNT = "Disable Account";
+    private final String CARD_DELETE_ACCOUNT = "Delete Account";
+    private final String CARD_ROTATE_PASSWORD = "Rotate Password";
+
+    private final String CARD_MY_AVATAR = "My Avatar";
 
     public MenusGUI() {
         menus = new Menus();
@@ -55,14 +72,123 @@ public class MenusGUI extends JFrame {
         cardLayout = new CardLayout();
         cards = new JPanel(cardLayout);
 
+        cards.add(loadingCard(), CARD_LOADING);
+        cards.add(languageCard(true), CARD_LANGUAGE);
         cards.add(menuInicioCard(), CARD_MENU_INICIO);
         cards.add(logInCard(), CARD_LOGIN);
         cards.add(signInCard(), CARD_SIGNIN);
 
         add(cards);
-        cardLayout.show(cards, CARD_MENU_INICIO);
+        cardLayout.show(cards, CARD_LOADING);
 
         setVisible(true);
+    }
+
+    private JPanel loadingCard() {
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.setBackground(Color.BLACK);
+
+        JFXPanel fxPanel = new JFXPanel();
+        panel.add(fxPanel, BorderLayout.CENTER);
+
+        Platform.runLater(() -> {
+            try {
+                File archivo = new File("src/ashley/galatea/progra2/proyecto2/assets/loading.mp4");
+
+                Media media = new Media(archivo.toURI().toString());
+                MediaPlayer player = new MediaPlayer(media);
+                MediaView mediaView = new MediaView(player);
+
+                StackPane root = new StackPane();
+                root.setStyle("-fx-background-color: black;");
+                root.getChildren().add(mediaView);
+
+                mediaView.setPreserveRatio(true);
+                mediaView.fitWidthProperty().bind(root.widthProperty());
+                mediaView.fitHeightProperty().bind(root.heightProperty());
+
+                Scene scene = new Scene(root);
+                fxPanel.setScene(scene);
+
+                player.setOnEndOfMedia(() -> {
+                    player.dispose();
+
+                    SwingUtilities.invokeLater(() -> {
+                        cardLayout.show(cards, CARD_LANGUAGE);
+                    });
+                });
+
+                player.play();
+
+            } catch (Exception e) {
+                System.out.println("No se pudo cargar loading.mp4: " + e.getMessage());
+
+                SwingUtilities.invokeLater(() -> {
+                    cardLayout.show(cards, CARD_LANGUAGE);
+                });
+            }
+        });
+
+        return panel;
+    }
+
+    private JPanel languageCard(boolean permitirSkip) {
+        BackgroundPanel panel = new BackgroundPanel("src/ashley/galatea/progra2/proyecto2/assets/background_basic.png");
+        panel.setLayout(new GridBagLayout());
+
+        JPanel contenido = new JPanel(new GridBagLayout());
+        contenido.setOpaque(false);
+
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.gridx = 0;
+
+        JLabel titulo = crearTexto("FLOW FREE", Color.WHITE, 42f);
+
+        gbc.gridy = 0;
+        gbc.insets = new Insets(0, 0, 55, 0);
+        contenido.add(titulo, gbc);
+
+        JLabel subtitulo = crearTexto("LANGUAGE PREFERENCE", new Color(0xD99B18), 15f);
+
+        gbc.gridy = 1;
+        gbc.insets = new Insets(0, 0, 35, 0);
+        contenido.add(subtitulo, gbc);
+
+        JButton english = crearBoton("ENGLISH", new Color(0xC893C9));
+        JButton spanish = crearBoton("SPANISH", new Color(0xC893C9));
+        JButton skip = crearBoton("SKIP", new Color(0xE25B57));
+
+        english.addActionListener(e -> {
+            menus.seleccionarIdiomaTemporal("English");
+            cardLayout.show(cards, CARD_MENU_INICIO);
+        });
+
+        spanish.addActionListener(e -> {
+            menus.seleccionarIdiomaTemporal("Spanish");
+            cardLayout.show(cards, CARD_MENU_INICIO);
+        });
+
+        skip.addActionListener(e -> {
+            menus.omitirSeleccionIdiomaTemporal();
+            cardLayout.show(cards, CARD_MENU_INICIO);
+        });
+
+        gbc.gridy = 2;
+        gbc.insets = new Insets(0, 0, 22, 0);
+        contenido.add(english, gbc);
+
+        gbc.gridy = 3;
+        gbc.insets = new Insets(0, 0, 0, 0);
+        contenido.add(spanish, gbc);
+
+        gbc.gridy = 4;
+        gbc.insets = new Insets(22, 0, 0, 0);
+        skip.setEnabled(permitirSkip);
+        contenido.add(skip, gbc);
+
+        panel.add(contenido);
+
+        return panel;
     }
 
     private JPanel menuInicioCard() {
@@ -252,10 +378,29 @@ public class MenusGUI extends JFrame {
 
                 String respuesta = menus.login(username, password);
 
-                if (respuesta.equals("Login correcto.")) {
+                if (respuesta.equals("Welcome")) {
                     JOptionPane.showMessageDialog(null, respuesta);
                     cards.add(menuPrincipalCard(), CARD_MENU_PRINCIPAL);
                     cardLayout.show(cards, CARD_MENU_PRINCIPAL);
+
+                } else if (respuesta.equals("Account disabled. To proceed reactivate your account.")) {
+                    int opcion = JOptionPane.showConfirmDialog(
+                        null,
+                        "This account is disabled.\nDo you want to reactivate it?",
+                        "Reactivate Account",
+                        JOptionPane.YES_NO_OPTION
+                    );
+
+                    if (opcion == JOptionPane.YES_OPTION) {
+                        String reactivar = menus.reactivarCuenta(username, password);
+                        JOptionPane.showMessageDialog(null, reactivar);
+
+                        if (reactivar.equals("Account restored successfully.")) {
+                            cards.add(menuPrincipalCard(), CARD_MENU_PRINCIPAL);
+                            cardLayout.show(cards, CARD_MENU_PRINCIPAL);
+                        }
+                    }
+
                 } else {
                     JOptionPane.showMessageDialog(null, respuesta);
                 }
@@ -296,6 +441,9 @@ public class MenusGUI extends JFrame {
         fgbc.gridx = 0;
         fgbc.anchor = GridBagConstraints.WEST;
 
+        JLabel nameLabel = crearTexto("NAME", Color.WHITE, 15f);
+        JTextField nameField = crearTextField();
+
         JLabel userLabel = crearTexto("USER", Color.WHITE, 15f);
         JTextField userField = crearTextField();
 
@@ -322,12 +470,19 @@ public class MenusGUI extends JFrame {
 
         fgbc.gridy = 0;
         fgbc.insets = new Insets(0, 0, 8, 0);
-        form.add(userLabel, fgbc);
+        form.add(nameLabel, fgbc);
 
         fgbc.gridy = 1;
-        form.add(userField, fgbc);
+        form.add(nameField, fgbc);
 
         fgbc.gridy = 2;
+        fgbc.insets = new Insets(0, 0, 8, 0);
+        form.add(userLabel, fgbc);
+
+        fgbc.gridy = 3;
+        form.add(userField, fgbc);
+
+        fgbc.gridy = 4;
         fgbc.insets = new Insets(12, 0, 8, 0);
         form.add(passLabel, fgbc);
 
@@ -345,7 +500,7 @@ public class MenusGUI extends JFrame {
         pgbc.insets = new Insets(0, 0, 0, 0);
         passPanel.add(ojo, pgbc);
 
-        fgbc.gridy = 3;
+        fgbc.gridy = 5;
         fgbc.insets = new Insets(0, 0, 8, 0);
         form.add(passPanel, fgbc);
 
@@ -373,7 +528,7 @@ public class MenusGUI extends JFrame {
         agregarReq(reqPanel, check4, text4, 3);
         agregarReq(reqPanel, check5, text5, 4);
 
-        fgbc.gridy = 4;
+        fgbc.gridy = 6;
         fgbc.insets = new Insets(0, 6, 3, 0);
         form.add(reqPanel, fgbc);
 
@@ -407,7 +562,7 @@ public class MenusGUI extends JFrame {
         bgbc.insets = new Insets(0, 0, 0, 0);
         botones.add(btnBack, bgbc);
 
-        fgbc.gridy = 9;
+        fgbc.gridy = 11;
         fgbc.insets = new Insets(18, 0, 0, 0);
         form.add(botones, fgbc);
 
@@ -419,10 +574,18 @@ public class MenusGUI extends JFrame {
 
         btnSignIn.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
-                String username = userField.getText();
-                String password = new String(passField.getPassword());
 
-                String respuesta = menus.crearUsuario(username, password, username);
+            String nombreCompleto = nameField.getText();
+            String username = userField.getText();
+            String password = new String(passField.getPassword());
+
+            if (!menus.idiomaTemporalSeleccionado()) {
+                cards.add(languageCard(false), CARD_LANGUAGE);
+                cardLayout.show(cards, CARD_LANGUAGE);
+                return;
+            }
+
+            String respuesta = menus.crearUsuario(username, password, nombreCompleto);
 
                 if (respuesta.equals("Usuario creado correctamente.")) {
                     JOptionPane.showMessageDialog(null, respuesta);
@@ -970,10 +1133,435 @@ public class MenusGUI extends JFrame {
         gbc.insets = new Insets(0, 0, 0, 0);
         derecho.add(perfilPanel, gbc);
 
-        disable.addActionListener(e -> JOptionPane.showMessageDialog(null, "Disable Account se trabajará más adelante."));
-        delete.addActionListener(e -> JOptionPane.showMessageDialog(null, "Delete Account se trabajará más adelante."));
-        rotate.addActionListener(e -> JOptionPane.showMessageDialog(null, "Rotate Password se trabajará más adelante."));
-        changeAvatar.addActionListener(e -> JOptionPane.showMessageDialog(null, "Change Avatar se trabajará más adelante."));
+        disable.addActionListener(e -> {
+            cards.add(disableAccountCard(), CARD_DISABLE_ACCOUNT);
+            cardLayout.show(cards, CARD_DISABLE_ACCOUNT);
+        });
+
+        
+        delete.addActionListener(e -> {
+            cards.add(deleteAccountCard(), CARD_DELETE_ACCOUNT);
+            cardLayout.show(cards, CARD_DELETE_ACCOUNT);
+        });
+
+        
+        rotate.addActionListener(e -> {
+            cards.add(rotatePasswordCard(), CARD_ROTATE_PASSWORD);
+            cardLayout.show(cards, CARD_ROTATE_PASSWORD);
+        });
+
+        
+        changeAvatar.addActionListener(e -> {
+            cards.add(myAvatarCard(), CARD_MY_AVATAR);
+            cardLayout.show(cards, CARD_MY_AVATAR);
+        });
+
+        return crearMenuLayout("MY PROFILE", derecho);
+    }
+
+    private JPanel disableAccountCard() {
+        JPanel derecho = new JPanel(new GridBagLayout());
+        derecho.setOpaque(false);
+
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.gridx = 0;
+
+        JLabel titulo = crearTexto("[ DISABLE ACCOUNT ]", new Color(0xC893C9), 28f);
+
+        gbc.gridy = 0;
+        gbc.insets = new Insets(0, 0, 55, 0);
+        derecho.add(titulo, gbc);
+
+        JLabel texto = crearTexto(
+            "<html><div style='text-align:left;'>"
+            + "BY DISABLING YOUR ACCOUNT, YOU WILL NOT<br>"
+            + "BE ABLE TO LOG IN OR ACCESS YOUR DATA<br>"
+            + "UNTIL YOU REACTIVATE IT AGAIN.<br><br><br>"
+            + "DO YOU WANT TO CONTINUE?"
+            + "</div></html>",
+            Color.WHITE,
+            14f
+        );
+
+        gbc.gridy = 1;
+        gbc.anchor = GridBagConstraints.WEST;
+        gbc.insets = new Insets(0, 0, 35, 0);
+        derecho.add(texto, gbc);
+
+        JCheckBox confirmar = crearCheckBox("I UNDERSTAND AND CONFIRM THIS ACTION");
+        confirmar.setForeground(new Color(0xC893C9));
+
+        gbc.gridy = 2;
+        gbc.insets = new Insets(0, 20, 25, 0);
+        derecho.add(confirmar, gbc);
+
+        JButton btnDisable = crearBotonBevel("DISABLE ACCOUNT");
+        btnDisable.setPreferredSize(new Dimension(170, 35));
+        btnDisable.setEnabled(false);
+
+        confirmar.addActionListener(e -> {
+            btnDisable.setEnabled(confirmar.isSelected());
+        });
+
+        btnDisable.addActionListener(e -> {
+            String respuesta = menus.desactivarCuentaActual();
+            JOptionPane.showMessageDialog(null, respuesta);
+
+            cardLayout.show(cards, CARD_MENU_INICIO);
+        });
+
+        gbc.gridy = 3;
+        gbc.anchor = GridBagConstraints.CENTER;
+        gbc.insets = new Insets(0, 0, 0, 0);
+        derecho.add(btnDisable, gbc);
+
+        return crearMenuLayout("MY PROFILE", derecho);
+    }
+
+    private JPanel deleteAccountCard() {
+        JPanel derecho = new JPanel(new GridBagLayout());
+        derecho.setOpaque(false);
+
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.gridx = 0;
+
+        JLabel titulo = crearTexto("[ DELETE ACCOUNT ]", new Color(0xC893C9), 28f);
+
+        gbc.gridy = 0;
+        gbc.insets = new Insets(0, 0, 45, 0);
+        derecho.add(titulo, gbc);
+
+        JLabel texto = crearTexto(
+            "<html><div style='text-align:left;'>"
+            + "THIS ACTION IS PERMANENT. YOUR ACCOUNT<br>"
+            + "AND ALL YOUR DATA WILL BE DELETED AND<br>"
+            + "CANNOT BE RECOVERED.<br><br>"
+            + "DELETING YOUR ACCOUNT WILL ERASE ALL<br>"
+            + "YOUR PROGRESS PERMANENTLY.<br><br>"
+            + "DO YOU WANT TO CONTINUE?"
+            + "</div></html>",
+            Color.WHITE,
+            14f
+        );
+
+        gbc.gridy = 1;
+        gbc.anchor = GridBagConstraints.WEST;
+        gbc.insets = new Insets(0, 0, 35, 0);
+        derecho.add(texto, gbc);
+
+        JCheckBox confirmar = crearCheckBox("I UNDERSTAND AND CONFIRM THIS ACTION");
+        confirmar.setForeground(new Color(0xC893C9));
+
+        gbc.gridy = 2;
+        gbc.insets = new Insets(0, 20, 25, 0);
+        derecho.add(confirmar, gbc);
+
+        JButton btnDelete = crearBotonBevel("DELETE ACCOUNT");
+        btnDelete.setPreferredSize(new Dimension(170, 35));
+        btnDelete.setEnabled(false);
+
+        confirmar.addActionListener(e -> {
+            btnDelete.setEnabled(confirmar.isSelected());
+        });
+
+        btnDelete.addActionListener(e -> {
+            String respuesta = menus.eliminarCuentaActual();
+            JOptionPane.showMessageDialog(null, respuesta);
+
+            if (respuesta.equals("Account deleted successfully.")) {
+                cardLayout.show(cards, CARD_MENU_INICIO);
+            }
+        });
+
+        gbc.gridy = 3;
+        gbc.anchor = GridBagConstraints.CENTER;
+        gbc.insets = new Insets(0, 0, 0, 0);
+        derecho.add(btnDelete, gbc);
+
+        return crearMenuLayout("MY PROFILE", derecho);
+    }
+
+    private JPanel rotatePasswordCard() {
+        JPanel derecho = new JPanel(new GridBagLayout());
+        derecho.setOpaque(false);
+
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.gridx = 0;
+
+        JLabel titulo = crearTexto("[ ROTATE PASSWORD ]", new Color(0xC893C9), 28f);
+
+        gbc.gridy = 0;
+        gbc.insets = new Insets(0, 0, 40, 0);
+        derecho.add(titulo, gbc);
+
+        JPanel form = new JPanel(new GridBagLayout());
+        form.setOpaque(false);
+
+        GridBagConstraints fgbc = new GridBagConstraints();
+        fgbc.gridx = 0;
+        fgbc.anchor = GridBagConstraints.WEST;
+
+        JLabel currentLabel = crearTexto("CURRENT PASSWORD", Color.WHITE, 15f);
+        JPasswordField currentField = crearPasswordField();
+
+        JLabel newLabel = crearTexto("NEW PASSWORD", Color.WHITE, 15f);
+        JPasswordField newField = crearPasswordField();
+
+        JButton ojo = new JButton("◉");
+        ojo.setPreferredSize(new Dimension(42, 28));
+        ojo.setFocusPainted(false);
+        ojo.setBorderPainted(false);
+        ojo.setCursor(new Cursor(Cursor.HAND_CURSOR));
+
+        final char echoOriginal = newField.getEchoChar();
+
+        ojo.addActionListener(e -> {
+            if (newField.getEchoChar() == (char) 0) {
+                newField.setEchoChar(echoOriginal);
+            } else {
+                newField.setEchoChar((char) 0);
+            }
+        });
+
+        fgbc.gridy = 0;
+        fgbc.insets = new Insets(0, 0, 8, 0);
+        form.add(currentLabel, fgbc);
+
+        fgbc.gridy = 1;
+        form.add(currentField, fgbc);
+
+        fgbc.gridy = 2;
+        fgbc.insets = new Insets(18, 0, 8, 0);
+        form.add(newLabel, fgbc);
+
+        JPanel newPassPanel = new JPanel(new GridBagLayout());
+        newPassPanel.setOpaque(false);
+
+        GridBagConstraints pgbc = new GridBagConstraints();
+        pgbc.gridy = 0;
+
+        pgbc.gridx = 0;
+        pgbc.insets = new Insets(0, 0, 0, 10);
+        newPassPanel.add(newField, pgbc);
+
+        pgbc.gridx = 1;
+        pgbc.insets = new Insets(0, 0, 0, 0);
+        newPassPanel.add(ojo, pgbc);
+
+        fgbc.gridy = 3;
+        fgbc.insets = new Insets(0, 0, 8, 0);
+        form.add(newPassPanel, fgbc);
+
+        JLabel check1 = crearTexto("✔", Color.WHITE, 17f);
+        JLabel text1 = crearTexto("CONTENER AL MENOS 8 CARACTERES", new Color(0xFFEAFF), 12f);
+
+        JLabel check2 = crearTexto("✔", Color.WHITE, 17f);
+        JLabel text2 = crearTexto("INCLUIR AL MENOS UNA LETRA MAYÚSCULA (A-Z)", new Color(0xFFEAFF), 12f);
+
+        JLabel check3 = crearTexto("✔", Color.WHITE, 17f);
+        JLabel text3 = crearTexto("INCLUIR AL MENOS UNA LETRA MINÚSCULA (a-z)", new Color(0xFFEAFF), 12f);
+
+        JLabel check4 = crearTexto("✔", Color.WHITE, 17f);
+        JLabel text4 = crearTexto("CONTENER AL MENOS UN NÚMERO (0-9)", new Color(0xFFEAFF), 12f);
+
+        JLabel check5 = crearTexto("✔", Color.WHITE, 17f);
+        JLabel text5 = crearTexto("INCLUIR AL MENOS UN CARÁCTER ESPECIAL (!@#$%&)", new Color(0xFFEAFF), 12f);
+
+        JPanel reqPanel = new JPanel(new GridBagLayout());
+        reqPanel.setOpaque(false);
+
+        agregarReq(reqPanel, check1, text1, 0);
+        agregarReq(reqPanel, check2, text2, 1);
+        agregarReq(reqPanel, check3, text3, 2);
+        agregarReq(reqPanel, check4, text4, 3);
+        agregarReq(reqPanel, check5, text5, 4);
+
+        fgbc.gridy = 4;
+        fgbc.insets = new Insets(0, 6, 25, 0);
+        form.add(reqPanel, fgbc);
+
+        newField.addKeyListener(new KeyAdapter() {
+            public void keyReleased(KeyEvent e) {
+                String pass = new String(newField.getPassword());
+
+                actualizarCheck(check1, menus.passwordTieneMinimoCaracteres(pass));
+                actualizarCheck(check2, menus.passwordTieneMayuscula(pass));
+                actualizarCheck(check3, menus.passwordTieneMinuscula(pass));
+                actualizarCheck(check4, menus.passwordTieneNumero(pass));
+                actualizarCheck(check5, menus.passwordTieneEspecial(pass));
+            }
+        });
+
+        JButton btnRotate = crearBotonBevel("ROTATE PASSWORD");
+        btnRotate.setPreferredSize(new Dimension(180, 35));
+
+        btnRotate.addActionListener(e -> {
+            String actual = new String(currentField.getPassword());
+            String nueva = new String(newField.getPassword());
+
+            String respuesta = menus.cambiarPassword(actual, nueva);
+            JOptionPane.showMessageDialog(null, respuesta);
+
+            if (respuesta.equals("Password rotated successfully.")) {
+                cards.add(myProfileCard(), CARD_MY_PROFILE);
+                cardLayout.show(cards, CARD_MY_PROFILE);
+            }
+        });
+
+        fgbc.gridy = 5;
+        fgbc.anchor = GridBagConstraints.CENTER;
+        fgbc.insets = new Insets(5, 0, 0, 0);
+        form.add(btnRotate, fgbc);
+
+        gbc.gridy = 1;
+        gbc.insets = new Insets(0, 0, 0, 0);
+        derecho.add(form, gbc);
+
+        return crearMenuLayout("MY PROFILE", derecho);
+    }
+
+    private JPanel myAvatarCard() {
+        JPanel derecho = new JPanel(new GridBagLayout());
+        derecho.setOpaque(false);
+
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.gridx = 0;
+
+        JLabel titulo = crearTexto("[ MY AVATAR ]", new Color(0xC893C9), 28f);
+
+        gbc.gridy = 0;
+        gbc.insets = new Insets(0, 0, 28, 0);
+        derecho.add(titulo, gbc);
+
+        JPanel contenido = new JPanel(new GridBagLayout());
+        contenido.setOpaque(false);
+
+        GridBagConstraints cgbc = new GridBagConstraints();
+
+        final String[] avatarSeleccionado = {menus.obtenerAvatarActual()};
+        final String[] colorSeleccionado = {menus.obtenerColorAvatarActual()};
+
+        AvatarPreviewPanel preview = new AvatarPreviewPanel(
+            avatarSeleccionado[0],
+            colorSeleccionado[0]
+        );
+
+        JPanel avatarGrid = new JPanel(new GridLayout(3, 7, 10, 10));
+        avatarGrid.setOpaque(false);
+
+        ArrayList<JButton> botonesAvatar = new ArrayList<JButton>();
+        ArrayList<String> avatares = menus.obtenerAvataresDisponibles();
+
+        for (int i = 0; i < avatares.size(); i++) {
+            String avatar = avatares.get(i);
+
+            JButton btnAvatar = crearBotonAvatar(avatar);
+
+            if (avatar.equals(avatarSeleccionado[0])) {
+                btnAvatar.setBorder(BorderFactory.createLineBorder(new Color(0xE25B57), 3));
+            }
+
+            btnAvatar.addActionListener(e -> {
+                avatarSeleccionado[0] = avatar;
+
+                for (int j = 0; j < botonesAvatar.size(); j++) {
+                    botonesAvatar.get(j).setBorder(BorderFactory.createEmptyBorder(3, 3, 3, 3));
+                }
+
+                btnAvatar.setBorder(BorderFactory.createLineBorder(new Color(0xE25B57), 3));
+
+                preview.actualizar(avatarSeleccionado[0], colorSeleccionado[0]);
+            });
+
+            botonesAvatar.add(btnAvatar);
+            avatarGrid.add(btnAvatar);
+        }
+
+        cgbc.gridx = 0;
+        cgbc.gridy = 0;
+        cgbc.insets = new Insets(0, 0, 18, 35);
+        contenido.add(avatarGrid, cgbc);
+
+        cgbc.gridx = 1;
+        cgbc.gridy = 0;
+        cgbc.gridheight = 2;
+        cgbc.insets = new Insets(0, 25, 0, 0);
+        contenido.add(preview, cgbc);
+
+        JPanel coloresPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 14, 0));
+        coloresPanel.setOpaque(false);
+
+        ArrayList<JButton> botonesColor = new ArrayList<JButton>();
+        ArrayList<String> colores = menus.obtenerColoresAvatarDisponibles();
+
+        for (int i = 0; i < colores.size(); i++) {
+            String colorHex = colores.get(i);
+
+            JButton btnColor = crearBotonColorAvatar(Color.decode(colorHex));
+
+            if (colorHex.equals(colorSeleccionado[0])) {
+                btnColor.setSelected(true);
+            }
+
+            btnColor.addActionListener(e -> {
+                colorSeleccionado[0] = colorHex;
+
+                for (int j = 0; j < botonesColor.size(); j++) {
+                    botonesColor.get(j).setSelected(false);
+                    botonesColor.get(j).repaint();
+                }
+
+                btnColor.setSelected(true);
+                btnColor.repaint();
+
+                preview.actualizar(avatarSeleccionado[0], colorSeleccionado[0]);
+            });
+
+            botonesColor.add(btnColor);
+            coloresPanel.add(btnColor);
+        }
+
+        cgbc.gridx = 0;
+        cgbc.gridy = 1;
+        cgbc.gridheight = 1;
+        cgbc.insets = new Insets(0, 0, 28, 35);
+        contenido.add(coloresPanel, cgbc);
+
+        JPanel botones = new JPanel(new FlowLayout(FlowLayout.CENTER, 18, 0));
+        botones.setOpaque(false);
+
+        JButton cancel = crearBotonBevel("CANCEL");
+        JButton save = crearBotonBevel("SAVE");
+
+        cancel.setPreferredSize(new Dimension(95, 35));
+        save.setPreferredSize(new Dimension(85, 35));
+
+        cancel.addActionListener(e -> {
+            cards.add(myProfileCard(), CARD_MY_PROFILE);
+            cardLayout.show(cards, CARD_MY_PROFILE);
+        });
+
+        save.addActionListener(e -> {
+            String respuesta = menus.guardarAvatarPerfil(avatarSeleccionado[0], colorSeleccionado[0]);
+            JOptionPane.showMessageDialog(null, respuesta);
+
+            if (respuesta.equals("Avatar saved successfully.") || respuesta.equals("No avatar changes detected.")) {
+                cards.add(myProfileCard(), CARD_MY_PROFILE);
+                cardLayout.show(cards, CARD_MY_PROFILE);
+            }
+        });
+
+        botones.add(cancel);
+        botones.add(save);
+
+        cgbc.gridx = 0;
+        cgbc.gridy = 2;
+        cgbc.insets = new Insets(0, 0, 0, 35);
+        contenido.add(botones, cgbc);
+
+        gbc.gridy = 1;
+        gbc.insets = new Insets(0, 0, 0, 0);
+        derecho.add(contenido, gbc);
 
         return crearMenuLayout("MY PROFILE", derecho);
     }
@@ -1313,6 +1901,92 @@ public class MenusGUI extends JFrame {
 
         gbc.gridx = 0;
         panel.add(label, gbc);
+    }
+
+    private JButton crearBotonAvatar(String avatar) {
+        JButton boton = new JButton();
+
+        ImageIcon icon = new ImageIcon(menus.obtenerRutaAvatar(avatar));
+        Image img = icon.getImage().getScaledInstance(40, 40, Image.SCALE_SMOOTH);
+
+        boton.setIcon(new ImageIcon(img));
+        boton.setPreferredSize(new Dimension(50, 50));
+        boton.setContentAreaFilled(false);
+        boton.setFocusPainted(false);
+        boton.setBorder(BorderFactory.createEmptyBorder(3, 3, 3, 3));
+        boton.setCursor(new Cursor(Cursor.HAND_CURSOR));
+
+        return boton;
+    }
+
+    private JButton crearBotonColorAvatar(Color color) {
+        JButton boton = new JButton() {
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g;
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+                g2.setColor(getBackground());
+                g2.fillOval(4, 4, getWidth() - 8, getHeight() - 8);
+            }
+
+            protected void paintBorder(Graphics g) {
+                if (isSelected()) {
+                    Graphics2D g2 = (Graphics2D) g;
+                    g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                    g2.setColor(new Color(0xE25B57));
+                    g2.setStroke(new BasicStroke(3));
+                    g2.drawOval(3, 3, getWidth() - 7, getHeight() - 7);
+                }
+            }
+        };
+
+        boton.setBackground(color);
+        boton.setPreferredSize(new Dimension(34, 34));
+        boton.setContentAreaFilled(false);
+        boton.setFocusPainted(false);
+        boton.setBorderPainted(false);
+        boton.setCursor(new Cursor(Cursor.HAND_CURSOR));
+
+        return boton;
+    }
+
+    private class AvatarPreviewPanel extends JPanel {
+        private String avatar;
+        private String colorHex;
+
+        public AvatarPreviewPanel(String avatar, String colorHex) {
+            this.avatar = avatar;
+            this.colorHex = colorHex;
+            setOpaque(false);
+            setPreferredSize(new Dimension(145, 145));
+        }
+
+        public void actualizar(String avatar, String colorHex) {
+            this.avatar = avatar;
+            this.colorHex = colorHex;
+            revalidate();
+            repaint();
+        }
+
+        protected void paintComponent(Graphics g) {
+            super.paintComponent(g);
+
+            Graphics2D g2 = (Graphics2D) g;
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+            g2.setColor(Color.decode(colorHex));
+            g2.fillRoundRect(0, 0, getWidth(), getHeight(), 35, 35);
+
+            ImageIcon icon = new ImageIcon(menus.obtenerRutaAvatar(avatar));
+            Image img = icon.getImage().getScaledInstance(105, 105, Image.SCALE_SMOOTH);
+            ImageIcon avatarIcon = new ImageIcon(img);
+
+            int x = (getWidth() - avatarIcon.getIconWidth()) / 2;
+            int y = (getHeight() - avatarIcon.getIconHeight()) / 2;
+
+            avatarIcon.paintIcon(this, g2, x, y);
+
+        }
     }
 
 }
