@@ -29,9 +29,12 @@ public class Menus {
     private Usuario usuarioActual;
     private String idiomaSeleccionadoTemporal = null;
 
+    private final String RUTA_CHALLENGES = "data/challenges/";
+
     public Menus() {
         File carpeta = new File(RUTA_USUARIOS);
         carpeta.mkdirs();
+        new File(RUTA_CHALLENGES).mkdirs();
         usuarioActual = null;
     }
 
@@ -714,22 +717,31 @@ public class Menus {
         return oponentes;
     }
 
-    public String iniciarChallenge(String usernameRival, String dificultad) {
+    public ChallengePartida iniciarChallengePartida(String usernameRival, String dificultad) {
         if (usuarioActual == null) {
-            return "Debe iniciar sesión.";
+            return null;
         }
 
         usernameRival = limpiarTexto(usernameRival);
 
         if (!existeUsuario(usernameRival)) {
-            return "El usuario rival no existe.";
+            return null;
         }
 
         if (usuarioActual.getUsername().equals(usernameRival)) {
-            return "No puede retarse a usted mismo.";
+            return null;
         }
 
         int nivel = obtenerNivelAleatorioPorDificultad(dificultad);
+
+        ChallengePartida challenge = new ChallengePartida(
+                usuarioActual.getUsername(),
+                usernameRival,
+                dificultad,
+                nivel
+        );
+
+        guardarChallenge(challenge);
 
         String logActual = "User started challenge against " + usernameRival
                 + ", difficulty " + dificultad + ", level " + nivel;
@@ -737,15 +749,19 @@ public class Menus {
         String logRival = "User was challenged by " + usuarioActual.getUsername()
                 + ", difficulty " + dificultad + ", level " + nivel;
 
-        usuarioActual.agregarReto("Challenge started against " + usernameRival
-                + " | Difficulty: " + dificultad + " | Level: " + nivel);
+        usuarioActual.agregarReto("Challenge ID: " + challenge.getId()
+                + " | Against: " + usernameRival
+                + " | Difficulty: " + dificultad
+                + " | Level: " + nivel);
         guardarUsuario(usuarioActual);
 
         Usuario rival = cargarUsuario(usernameRival);
 
         if (rival != null) {
-            rival.agregarReto("User was challenged by " + usuarioActual.getUsername()
-                    + " | Difficulty: " + dificultad + " | Level: " + nivel);
+            rival.agregarReto("Challenge ID: " + challenge.getId()
+                    + " | Challenged by: " + usuarioActual.getUsername()
+                    + " | Difficulty: " + dificultad
+                    + " | Level: " + nivel);
             guardarUsuario(rival);
 
             guardarActividad(usernameRival, "game_activity.dat", logRival);
@@ -753,7 +769,7 @@ public class Menus {
 
         registrarGameActivity(logActual);
 
-        return "Challenge started.";
+        return challenge;
     }
 
     private int obtenerNivelAleatorioPorDificultad(String dificultad) {
@@ -780,6 +796,69 @@ public class Menus {
         }
 
         return 1;
+    }
+
+    public String registrarResultadoChallenge(String challengeId, int tiempoSegundos) {
+        if (usuarioActual == null) {
+            return "Debe iniciar sesión.";
+        }
+
+        ChallengePartida challenge = cargarChallenge(challengeId);
+
+        if (challenge == null) {
+            return "No se pudo cargar el challenge.";
+        }
+
+        int scoreBase = calcularPuntajeChallenge(challenge.getDificultad(), false);
+
+        boolean registrado = challenge.registrarTiempo(
+                usuarioActual.getUsername(),
+                tiempoSegundos,
+                scoreBase
+        );
+
+        if (!registrado) {
+            return "Este resultado ya fue registrado.";
+        }
+
+        usuarioActual.sumarPuntuacion(scoreBase);
+        guardarUsuario(usuarioActual);
+
+        registrarGameActivity(
+                "User completed challenge " + challenge.getId()
+                + " in " + tiempoSegundos + " seconds and won " + scoreBase + " points"
+        );
+
+        if (challenge.ambosCompletaron()) {
+            challenge.calcularGanador();
+
+            Usuario jugador1 = cargarUsuario(challenge.getJugador1());
+            Usuario jugador2 = cargarUsuario(challenge.getJugador2());
+
+            if (challenge.getGanador().equals(challenge.getJugador1()) && jugador1 != null) {
+                jugador1.sumarPuntuacion(50);
+                guardarUsuario(jugador1);
+            }
+
+            if (challenge.getGanador().equals(challenge.getJugador2()) && jugador2 != null) {
+                jugador2.sumarPuntuacion(50);
+                guardarUsuario(jugador2);
+            }
+
+            guardarActividad(challenge.getJugador1(), "game_activity.dat",
+                    "Challenge " + challenge.getId() + " completed. Winner: " + challenge.getGanador());
+
+            guardarActividad(challenge.getJugador2(), "game_activity.dat",
+                    "Challenge " + challenge.getId() + " completed. Winner: " + challenge.getGanador());
+        }
+
+        guardarChallenge(challenge);
+
+        return "OK";
+    }
+
+    public ChallengePartida obtenerChallenge(String challengeId) {
+        return cargarChallenge(challengeId);
     }
 
     // =========================================================
@@ -935,6 +1014,45 @@ public class Menus {
         guardarUsuario(usuarioActual);
 
         return "Estadísticas actualizadas correctamente.";
+    }
+
+    public String guardarProgresoNivel(int nivel, int puntaje, long tiempoMinutos, int tiempoSegundos) {
+        if (usuarioActual == null) {
+            return "Debe iniciar sesión.";
+        }
+
+        boolean primeraVez = !nivelCompletado(nivel);
+        int puntosAplicados = primeraVez ? puntaje : 0;
+
+        if (primeraVez) {
+            completarPuzzle(nivel, puntaje, tiempoMinutos);
+
+            usuarioActual.registrarPartida(
+                    true,
+                    nivel,
+                    puntosAplicados,
+                    tiempoSegundos,
+                    "Level completed in " + tiempoSegundos + " seconds"
+            );
+
+            guardarUsuario(usuarioActual);
+
+            return "Nivel completado correctamente.";
+        }
+
+        registrarGameActivity("User replayed and completed level " + nivel);
+
+        usuarioActual.registrarPartida(
+                true,
+                nivel,
+                0,
+                tiempoSegundos,
+                "Level replayed in " + tiempoSegundos + " seconds"
+        );
+
+        guardarUsuario(usuarioActual);
+
+        return "Nivel completado nuevamente sin puntos adicionales.";
     }
 
     // =========================================================
@@ -1104,6 +1222,8 @@ public class Menus {
         if (usuarioActual != null && idiomaSeleccionadoTemporal != null) {
             usuarioActual.setIdioma(idiomaSeleccionadoTemporal);
             guardarUsuario(usuarioActual);
+
+            idiomaSeleccionadoTemporal = null;
         }
     }
 
@@ -1177,6 +1297,328 @@ public class Menus {
         }
 
         return puntos;
+    }
+
+    private void guardarChallenge(ChallengePartida challenge) {
+        try {
+            File carpeta = new File(RUTA_CHALLENGES);
+            carpeta.mkdirs();
+
+            ObjectOutputStream out = new ObjectOutputStream(
+                    new FileOutputStream(RUTA_CHALLENGES + challenge.getId() + ".dat")
+            );
+
+            out.writeObject(challenge);
+            out.close();
+
+        } catch (Exception e) {
+            System.out.println("Error guardando challenge: " + e.getMessage());
+        }
+    }
+
+    private ChallengePartida cargarChallenge(String id) {
+        try {
+            ObjectInputStream in = new ObjectInputStream(
+                    new FileInputStream(RUTA_CHALLENGES + id + ".dat")
+            );
+
+            ChallengePartida challenge = (ChallengePartida) in.readObject();
+            in.close();
+
+            return challenge;
+
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    // =========================================================
+    // STATS - RANKING DE PUNTAJES
+    // =========================================================
+
+    public String obtenerGamesPlayedStats() {
+        if (usuarioActual == null) return "0";
+        return String.valueOf(usuarioActual.getPartidasJugadas());
+    }
+
+    public String obtenerLevelsCompletedStats() {
+        if (usuarioActual == null) return "0";
+        return String.valueOf(usuarioActual.getNivelesCompletados());
+    }
+
+    public String obtenerAvgTimePerLevelStats() {
+        if (usuarioActual == null) return "00:00";
+
+        long segundos = usuarioActual.getTiempoPromedioPorNivel();
+        long minutos = segundos / 60;
+        long resto = segundos % 60;
+
+        return String.format("%02d:%02d", minutos, resto);
+    }
+
+    public String obtenerChallengesWonStats() {
+        if (usuarioActual == null) return "0";
+        return String.valueOf(usuarioActual.getRetosGanados());
+    }
+
+    public String obtenerScoreStats() {
+        if (usuarioActual == null) return "0";
+        return String.valueOf(usuarioActual.getPuntuacionGeneral());
+    }
+
+    public String obtenerRankingStats() {
+        if (usuarioActual == null) return "#00";
+
+        ArrayList<Usuario> usuarios = obtenerUsuarios();
+
+        Collections.sort(usuarios, new Comparator<Usuario>() {
+            public int compare(Usuario a, Usuario b) {
+                return b.getPuntuacionGeneral() - a.getPuntuacionGeneral();
+            }
+        });
+
+        for (int i = 0; i < usuarios.size(); i++) {
+            if (usuarios.get(i).getUsername().equals(usuarioActual.getUsername())) {
+                return String.format("#%02d", i + 1);
+            }
+        }
+
+        return "#00";
+    }
+
+    public ArrayList<String> buscarUsuariosParaCompararStats(String filtro) {
+        ArrayList<String> resultado = new ArrayList<String>();
+
+        if (usuarioActual == null) {
+            return resultado;
+        }
+
+        filtro = limpiarTexto(filtro);
+
+        ArrayList<Usuario> usuarios = obtenerUsuarios();
+        String actual = usuarioActual.getUsername();
+
+        for (int i = 0; i < usuarios.size(); i++) {
+            String username = usuarios.get(i).getUsername();
+
+            if (username.equals(actual)) {
+                continue;
+            }
+
+            if (filtro.length() == 1 && !username.startsWith(filtro)) {
+                continue;
+            }
+
+            if (filtro.length() > 1 && !username.contains(filtro)) {
+                continue;
+            }
+
+            resultado.add(username);
+        }
+
+        return resultado;
+    }
+
+    public ArrayList<String[]> obtenerGeneralRanking() {
+        ArrayList<String[]> ranking = new ArrayList<String[]>();
+        ArrayList<Usuario> usuarios = obtenerUsuarios();
+
+        Collections.sort(usuarios, new Comparator<Usuario>() {
+            public int compare(Usuario a, Usuario b) {
+                return b.getPuntuacionGeneral() - a.getPuntuacionGeneral();
+            }
+        });
+
+        for (int i = 0; i < usuarios.size(); i++) {
+            Usuario u = usuarios.get(i);
+
+            String[] fila = {
+                String.valueOf(i + 1),
+                u.getUsername().toUpperCase(),
+                String.valueOf(u.getPuntuacionGeneral()),
+                String.valueOf(u.getNivelesCompletados()),
+                formatearSegundos(u.getTiempoPromedioPorNivel()),
+                formatearSegundos(u.getTiempoTotalJugado())
+            };
+
+            ranking.add(fila);
+        }
+
+        return ranking;
+    }
+
+    private String formatearSegundos(long segundos) {
+        long horas = segundos / 3600;
+        long minutos = (segundos % 3600) / 60;
+        long resto = segundos % 60;
+
+        if (horas > 0) {
+            return String.format("%02d:%02d:%02d", horas, minutos, resto);
+        }
+
+        return String.format("%02d:%02d", minutos, resto);
+    }
+
+    public ArrayList<String[]> obtenerFriendsRanking() {
+        ArrayList<String[]> ranking = new ArrayList<String[]>();
+
+        if (usuarioActual == null) {
+            return ranking;
+        }
+
+        ArrayList<String> amigos = usuarioActual.getAmigosRivales();
+        ArrayList<Usuario> usuariosRanking = new ArrayList<Usuario>();
+
+        for (int i = 0; i < amigos.size(); i++) {
+            Usuario amigo = cargarUsuario(amigos.get(i));
+
+            if (amigo != null) {
+                usuariosRanking.add(amigo);
+            }
+        }
+
+        Collections.sort(usuariosRanking, new Comparator<Usuario>() {
+            public int compare(Usuario a, Usuario b) {
+                return b.getPuntuacionGeneral() - a.getPuntuacionGeneral();
+            }
+        });
+
+        for (int i = 0; i < usuariosRanking.size(); i++) {
+            Usuario u = usuariosRanking.get(i);
+
+            String[] fila = {
+                String.valueOf(i + 1),
+                u.getUsername().toUpperCase(),
+                String.valueOf(u.getPuntuacionGeneral()),
+                String.valueOf(u.getNivelesCompletados()),
+                formatearSegundos(u.getTiempoPromedioPorNivel()),
+                formatearSegundos(u.getTiempoTotalJugado())
+            };
+
+            ranking.add(fila);
+        }
+
+        return ranking;
+    }
+
+    public ArrayList<String[]> obtenerCompareStats(String usernameComparar) {
+        ArrayList<String[]> datos = new ArrayList<String[]>();
+
+        if (usuarioActual == null) {
+            return datos;
+        }
+
+        Usuario comparado = cargarUsuario(limpiarTexto(usernameComparar));
+
+        if (comparado == null) {
+            return datos;
+        }
+
+        datos.add(crearFilaRanking(usuarioActual, 1));
+        datos.add(crearFilaRanking(comparado, 2));
+
+        return datos;
+    }
+
+    private String[] crearFilaRanking(Usuario u, int posicion) {
+        String[] fila = {
+            String.valueOf(posicion),
+            u.getUsername().toUpperCase(),
+            String.valueOf(u.getPuntuacionGeneral()),
+            String.valueOf(u.getNivelesCompletados()),
+            formatearSegundos(u.getTiempoPromedioPorNivel()),
+            formatearSegundos(u.getTiempoTotalJugado())
+        };
+
+        return fila;
+    }
+
+    public ArrayList<ChallengePartida> obtenerChallengesPendientes() {
+        ArrayList<ChallengePartida> pendientes = new ArrayList<ChallengePartida>();
+
+        if (usuarioActual == null) {
+            return pendientes;
+        }
+
+        File carpeta = new File(RUTA_CHALLENGES);
+        File[] archivos = carpeta.listFiles();
+
+        if (archivos == null) {
+            return pendientes;
+        }
+
+        for (int i = 0; i < archivos.length; i++) {
+            if (archivos[i].isFile() && archivos[i].getName().endsWith(".dat")) {
+                String id = archivos[i].getName().replace(".dat", "");
+                ChallengePartida challenge = cargarChallenge(id);
+
+                if (challenge != null
+                        && challenge.getJugador2().equals(usuarioActual.getUsername())
+                        && !challenge.isFinalizado()
+                        && challenge.getTiempoJugador2() == -1) {
+                    pendientes.add(challenge);
+                }
+            }
+        }
+
+        return pendientes;
+    }
+
+    public String declinarChallenge(String challengeId) {
+        if (usuarioActual == null) {
+            return "Debe iniciar sesión.";
+        }
+
+        ChallengePartida challenge = cargarChallenge(challengeId);
+
+        if (challenge == null) {
+            return "No se pudo cargar el challenge.";
+        }
+
+        if (!challenge.getJugador2().equals(usuarioActual.getUsername())) {
+            return "Este challenge no pertenece al usuario actual.";
+        }
+
+        challenge.declinar(usuarioActual.getUsername());
+
+        Usuario retador = cargarUsuario(challenge.getJugador1());
+
+        if (retador != null) {
+            retador.sumarPuntuacion(50);
+            retador.sumarRetoGanado();
+            guardarUsuario(retador);
+        }
+
+        guardarChallenge(challenge);
+
+        guardarActividad(challenge.getJugador1(), "game_activity.dat",
+                "Challenge " + challenge.getId() + " was declined. User won 50 bonus points.");
+
+        registrarGameActivity(
+                "User declined challenge " + challenge.getId()
+                + " from " + challenge.getJugador1()
+        );
+
+        return "Challenge declined.";
+    }
+
+    public String obtenerTiempoChallengeAgo(ChallengePartida challenge) {
+        if (challenge == null || challenge.getFechaCreacion() == null) {
+            return "recently";
+        }
+
+        long diferencia = new Date().getTime() - challenge.getFechaCreacion().getTime();
+        long minutos = diferencia / 60000;
+
+        if (minutos < 1) return "just now";
+        if (minutos < 60) return minutos + " min ago";
+
+        long horas = minutos / 60;
+
+        if (horas < 24) return horas + "h ago";
+
+        long dias = horas / 24;
+        return dias + "d ago";
     }
 
 }

@@ -768,6 +768,10 @@ public class FlowFreeJuego extends Puzzle {
         camino.add(nuevo);
         ocupadas[fila][columna] = colorActivo;
         ultimoColorModificado = colorActivo;
+
+        if (puntos[fila][columna] == colorActivo && camino.size() > 1) {
+            arrastrando = false;
+        }
     }
 
     @Override
@@ -923,13 +927,16 @@ public class FlowFreeJuego extends Puzzle {
 
         ArrayList<Point> camino = caminos.get(ultimoColorModificado);
 
-        if (camino == null || camino.size() <= 1) {
+        if (camino == null || camino.size() == 0) {
             return;
         }
 
-        Point ultimo = camino.remove(camino.size() - 1);
-        ocupadas[ultimo.y][ultimo.x] = VACIO;
+        limpiarCamino(ultimoColorModificado);
+
+        colorActivo = VACIO;
+        arrastrando = false;
         victoria = false;
+        ultimoColorModificado = VACIO;
     }
 
     public boolean caminoActivoCompleto() {

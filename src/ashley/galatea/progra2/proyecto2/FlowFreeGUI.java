@@ -24,6 +24,11 @@ import java.awt.Toolkit;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
+import java.awt.GridBagLayout;
+import java.awt.Component;
+import java.awt.GridBagConstraints;
+import java.awt.Insets;
+import java.awt.Cursor;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -42,6 +47,7 @@ import javax.swing.border.BevelBorder;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.ImageIcon;
+import javax.swing.JTextArea;
 
 public class FlowFreeGUI extends JFrame {
 
@@ -65,14 +71,23 @@ public class FlowFreeGUI extends JFrame {
 
     private static final String ASSETS_DIR = "src/ashley/galatea/progra2/proyecto2/assets/";
 
+    private boolean modoChallenge = false;
+    private String challengeId = "";
+
     public FlowFreeGUI() {
-        this(null, null, 1);
+        this(null, null, 1, false, "");
     }
 
     public FlowFreeGUI(Menus menus, MenusGUI menuPrincipal, int nivelInicial) {
+        this(menus, menuPrincipal, nivelInicial, false, "");
+    }
+
+    public FlowFreeGUI(Menus menus, MenusGUI menuPrincipal, int nivelInicial, boolean modoChallenge, String challengeId) {
         this.menus = menus;
         this.menuPrincipal = menuPrincipal;
         this.nivelInicial = nivelInicial;
+        this.modoChallenge = modoChallenge;
+        this.challengeId = challengeId;
         this.audioManager = new AudioManager(menus);
 
         setTitle("Flow Free");
@@ -90,11 +105,9 @@ public class FlowFreeGUI extends JFrame {
         cardLayout = new CardLayout();
         contenedor = new JPanel(cardLayout);
 
-        contenedor.add(new PanelIntro(), CARD_INTRO);
-
         add(contenedor);
 
-        cardLayout.show(contenedor, CARD_INTRO);
+        SwingUtilities.invokeLater(() -> iniciarFlujoNivelSeleccionado());
     }
 
     private void mostrarTransicion(String nombreImagen, Runnable accionDespues) {
@@ -242,6 +255,10 @@ public class FlowFreeGUI extends JFrame {
 
             audioManager.detenerMusica();
 
+            if (menuPrincipal != null) {
+                menuPrincipal.mostrarPlayCardActualizado();
+            }
+
             dispose();
         }
     }
@@ -255,17 +272,40 @@ public class FlowFreeGUI extends JFrame {
         mostrarTransicion(nombreImagen, () -> {
             if (juego.haySiguienteNivel()) {
                 juego.avanzarNivel();
-                actualizarEstado();
-                panelTablero.repaint();
-                cardLayout.show(contenedor, CARD_JUEGO);
+
+                String transicion = obtenerTransicionAntesDeNivel(juego.getNivelActual());
+
+                if (transicion != null) {
+                    mostrarTransicion(transicion, () -> {
+                        actualizarEstado();
+                        panelTablero.repaint();
+                        cardLayout.show(contenedor, CARD_JUEGO);
+                    });
+                } else {
+                    actualizarEstado();
+                    panelTablero.repaint();
+                    cardLayout.show(contenedor, CARD_JUEGO);
+                }
+
             } else {
-                cardLayout.show(contenedor, CARD_JUEGO);
                 JOptionPane.showMessageDialog(
                         this,
                         "All levels completed!",
                         "Game Completed",
                         JOptionPane.INFORMATION_MESSAGE
                 );
+
+                if (timerGUI != null) {
+                    timerGUI.stop();
+                }
+
+                audioManager.detenerMusica();
+
+                if (menuPrincipal != null) {
+                    menuPrincipal.mostrarPlayCardActualizado();
+                }
+
+                dispose();
             }
         });
     }
@@ -472,7 +512,7 @@ public class FlowFreeGUI extends JFrame {
                                 JOptionPane.INFORMATION_MESSAGE
                         );
 
-                        ventana.mostrarNivelCompletado(nivelCompletado);
+                        ventana.manejarNivelCompletado(nivelCompletado, tiempoFinal);
                     }
 
                     repaint();
@@ -596,14 +636,186 @@ public class FlowFreeGUI extends JFrame {
 
         int puntaje = menus.calcularPuntajeNivel(nivelCompletado);
 
-        menus.completarPuzzle(nivelCompletado, puntaje, tiempoMinutos);
-
-        menus.registrarResultadoPartida(
-                true,
+        menus.guardarProgresoNivel(
                 nivelCompletado,
                 puntaje,
-                tiempoSegundos,
-                "Level completed in " + tiempoSegundos + " seconds"
+                tiempoMinutos,
+                tiempoSegundos
         );
     }
+
+    private void iniciarFlujoNivelSeleccionado() {
+
+        if (modoChallenge) {
+            crearVistaJuego();
+            cardLayout.show(contenedor, CARD_JUEGO);
+            return;
+        }
+
+        if (nivelInicial == 1) {
+            contenedor.add(new PanelIntro(), CARD_INTRO);
+            cardLayout.show(contenedor, CARD_INTRO);
+            return;
+        }
+
+        if (nivelInicial == 5) {
+            mostrarTransicion("cero_fixes2.png", () -> {
+                crearVistaJuego();
+                cardLayout.show(contenedor, CARD_JUEGO);
+            });
+            return;
+        }
+
+        if (nivelInicial == 9) {
+            mostrarTransicion("cero_fixes3.png", () -> {
+                crearVistaJuego();
+                cardLayout.show(contenedor, CARD_JUEGO);
+            });
+            return;
+        }
+
+        crearVistaJuego();
+        cardLayout.show(contenedor, CARD_JUEGO);
+    }
+
+    private String obtenerTransicionAntesDeNivel(int nivel) {
+        if (nivel == 5) {
+            return "cero_fixes2.png";
+        }
+
+        if (nivel == 9) {
+            return "cero_fixes3.png";
+        }
+
+        return null;
+    }
+
+    private void manejarNivelCompletado(int nivelCompletado, int tiempoFinal) {
+        if (modoChallenge) {
+            mostrarResultadoChallenge(tiempoFinal);
+        } else {
+            mostrarNivelCompletado(nivelCompletado);
+        }
+    }
+
+    private void mostrarResultadoChallenge(int tiempoFinal) {
+        if (menus == null || challengeId.length() == 0) {
+            return;
+        }
+
+        menus.registrarResultadoChallenge(challengeId, tiempoFinal);
+
+        ChallengePartida challenge = menus.obtenerChallenge(challengeId);
+
+        if (challenge == null) {
+            return;
+        }
+
+        String texto;
+
+        String actual = menus.getUsuarioActual().getUsername().toUpperCase();
+
+        if (!challenge.ambosCompletaron()) {
+            int score = menus.calcularPuntajeChallenge(challenge.getDificultad(), false);
+
+            texto =
+                    "CHALLENGE RESULTS\n\n"
+                    + actual + " TIME\n"
+                    + formatearTiempo(tiempoFinal) + "\n\n"
+                    + "SCORE\n"
+                    + score;
+        } else {
+            texto =
+                    "CHALLENGE RESULTS\n\n"
+                    + challenge.getJugador1().toUpperCase() + " TIME\n"
+                    + formatearTiempo(challenge.getTiempoJugador1()) + "\n"
+                    + "SCORE: " + challenge.getScoreJugador1() + "\n\n"
+                    + challenge.getJugador2().toUpperCase() + " TIME\n"
+                    + formatearTiempo(challenge.getTiempoJugador2()) + "\n"
+                    + "SCORE: " + challenge.getScoreJugador2() + "\n\n"
+                    + "WINNER\n"
+                    + challenge.getGanador().toUpperCase() + "\n\n"
+                    + "Looks like Peter's arcade\n"
+                    + "trusts " + challenge.getGanador().toUpperCase() + " more today..";
+        }
+
+        contenedor.add(new PanelResultadoChallenge(texto), "RESULTADO_CHALLENGE");
+        cardLayout.show(contenedor, "RESULTADO_CHALLENGE");
+    }
+
+    private String formatearTiempo(int segundos) {
+        int minutos = segundos / 60;
+        int resto = segundos % 60;
+
+        return String.format("%02d:%02d", minutos, resto);
+    }
+
+    private class PanelResultadoChallenge extends JPanel {
+
+        private BufferedImage fondo;
+        private String texto;
+
+        public PanelResultadoChallenge(String texto) {
+            this.texto = texto;
+            setLayout(new GridBagLayout());
+
+            try {
+                fondo = ImageIO.read(new File(ASSETS_DIR + "backgroung_challenge.png"));
+            } catch (IOException e) {
+                fondo = null;
+            }
+
+            JPanel contenido = new JPanel(new GridBagLayout());
+            contenido.setOpaque(false);
+
+            GridBagConstraints gbc = new GridBagConstraints();
+            gbc.gridx = 0;
+
+            JTextArea area = new JTextArea(texto);
+            area.setOpaque(false);
+            area.setEditable(false);
+            area.setFocusable(false);
+            area.setForeground(Color.WHITE);
+            area.setFont(new Font("Monospaced", Font.BOLD, 24));
+            area.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+            gbc.gridy = 0;
+            gbc.insets = new Insets(0, 0, 30, 0);
+            contenido.add(area, gbc);
+
+            JButton aceptar = new JButton("ACCEPT");
+            aceptar.setFont(new Font("Monospaced", Font.BOLD, 16));
+            aceptar.setBackground(new Color(0xD4D4D4));
+            aceptar.setForeground(Color.BLACK);
+            aceptar.setFocusPainted(false);
+            aceptar.setBorder(BorderFactory.createBevelBorder(BevelBorder.RAISED));
+            aceptar.setPreferredSize(new Dimension(140, 42));
+            aceptar.setCursor(new Cursor(Cursor.HAND_CURSOR));
+
+            aceptar.addActionListener(e -> {
+                if (timerGUI != null) {
+                    timerGUI.stop();
+                }
+
+                audioManager.detenerMusica();
+
+                dispose();
+            });
+
+            gbc.gridy = 1;
+            gbc.insets = new Insets(0, 0, 0, 0);
+            contenido.add(aceptar, gbc);
+
+            add(contenido);
+        }
+
+        protected void paintComponent(Graphics g) {
+            super.paintComponent(g);
+
+            if (fondo != null) {
+                g.drawImage(fondo, 0, 0, getWidth(), getHeight(), null);
+            }
+        }
+    }
+
 }

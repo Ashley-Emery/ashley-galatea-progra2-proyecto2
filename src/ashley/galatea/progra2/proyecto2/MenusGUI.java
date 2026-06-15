@@ -36,22 +36,38 @@ public class MenusGUI extends JFrame {
     private final String CARD_MENU_INICIO = "Menu Inicio";
     private final String CARD_LOGIN = "Log In";
     private final String CARD_SIGNIN = "Sign In";
+
     private final String CARD_MENU_PRINCIPAL = "Menu Principal";
-    private final String CARD_FRIENDS_HUB = "Friends Hub";
-    private final String CARD_MY_STATS = "My Stats";
-    private final String CARD_MY_PROFILE = "My Profile";
-    private final String CARD_WHATS_NEW = "Whats New";
-    private final String CARD_SETTINGS = "Settings";
     private final String CARD_INFO_NIVELES = "Info Niveles";
-    private final String CARD_CHALLENGE = "Challenge";
     private final String CARD_MY_ACTIVITY = "My Activity";
+    private final String CARD_CHALLENGE = "Challenge";
+
+    private final String CARD_ARCADE_GIF = "Arcade Gif";
+    private final String CARD_INICIO_CHALLENGE = "Inicio Challenge";
+
+    private final String CARD_FRIENDS_HUB = "Friends Hub";
     private final String CARD_FIND_FRIENDS = "Find Friends";
 
+    private final String CARD_MY_PROFILE = "My Profile";
     private final String CARD_DISABLE_ACCOUNT = "Disable Account";
     private final String CARD_DELETE_ACCOUNT = "Delete Account";
     private final String CARD_ROTATE_PASSWORD = "Rotate Password";
-
     private final String CARD_MY_AVATAR = "My Avatar";
+
+    private final String CARD_MY_STATS = "My Stats";
+    private final String CARD_GENERAL_RANKING = "General Ranking";
+    private final String CARD_FRIENDS_RANKING = "Friends Ranking";
+    private final String CARD_COMPARE_STATS = "Compare Stats";
+
+    private final String CARD_WHATS_NEW = "Whats New";
+    private final String CARD_SETTINGS = "Settings";
+
+    private boolean loginPendienteDespuesIdioma = false;
+    private String usernamePendienteIdioma = "";
+    private String passwordPendienteIdioma = "";
+
+    private JPanel playCardActual;
+    private JPanel challengeCardActual;
 
     public MenusGUI() {
         menus = new Menus();
@@ -160,12 +176,12 @@ public class MenusGUI extends JFrame {
 
         english.addActionListener(e -> {
             menus.seleccionarIdiomaTemporal("English");
-            cardLayout.show(cards, CARD_MENU_INICIO);
+            continuarDespuesDeSeleccionIdioma();
         });
 
         spanish.addActionListener(e -> {
             menus.seleccionarIdiomaTemporal("Spanish");
-            cardLayout.show(cards, CARD_MENU_INICIO);
+            continuarDespuesDeSeleccionIdioma();
         });
 
         skip.addActionListener(e -> {
@@ -575,23 +591,29 @@ public class MenusGUI extends JFrame {
         btnSignIn.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
 
-            String nombreCompleto = nameField.getText();
-            String username = userField.getText();
-            String password = new String(passField.getPassword());
+                String nombreCompleto = nameField.getText();
+                String username = userField.getText();
+                String password = new String(passField.getPassword());
 
-            if (!menus.idiomaTemporalSeleccionado()) {
-                cards.add(languageCard(false), CARD_LANGUAGE);
-                cardLayout.show(cards, CARD_LANGUAGE);
-                return;
-            }
-
-            String respuesta = menus.crearUsuario(username, password, nombreCompleto);
+                String respuesta = menus.crearUsuario(username, password, nombreCompleto);
 
                 if (respuesta.equals("Usuario creado correctamente.")) {
                     JOptionPane.showMessageDialog(null, respuesta);
+
+                    if (!menus.idiomaTemporalSeleccionado()) {
+                        loginPendienteDespuesIdioma = true;
+                        usernamePendienteIdioma = username;
+                        passwordPendienteIdioma = password;
+
+                        cards.add(languageCard(false), CARD_LANGUAGE);
+                        cardLayout.show(cards, CARD_LANGUAGE);
+                        return;
+                    }
+
                     menus.login(username, password);
                     cards.add(menuPrincipalCard(), CARD_MENU_PRINCIPAL);
                     cardLayout.show(cards, CARD_MENU_PRINCIPAL);
+
                 } else {
                     JOptionPane.showMessageDialog(null, respuesta);
                 }
@@ -637,13 +659,11 @@ public class MenusGUI extends JFrame {
 
         
         play.addActionListener(e -> {
-            cards.add(playCard(), CARD_INFO_NIVELES);
-            cardLayout.show(cards, CARD_INFO_NIVELES);
+            mostrarPlayCardActualizado();
         });
 
         challenge.addActionListener(e -> {
-            cards.add(challengeCard(), CARD_CHALLENGE);
-            cardLayout.show(cards, CARD_CHALLENGE);
+            mostrarChallengeCardLimpio();
         });
 
         activity.addActionListener(e -> {
@@ -726,8 +746,9 @@ public class MenusGUI extends JFrame {
         gbc.insets = new Insets(0, 0, 8, 0);
         derecho.add(opponentTitle, gbc);
 
-        JPanel opponentPanel = new JPanel(new GridLayout(0, 1, 0, 2));
-        opponentPanel.setOpaque(false);
+        JPanel listaPanel = new JPanel();
+        listaPanel.setLayout(new BoxLayout(listaPanel, BoxLayout.Y_AXIS));
+        listaPanel.setOpaque(false);
 
         ButtonGroup opponentGroup = new ButtonGroup();
 
@@ -737,12 +758,14 @@ public class MenusGUI extends JFrame {
             JCheckBox check = crearCheckBox(oponentes.get(i).toUpperCase());
             check.setActionCommand(oponentes.get(i));
             opponentGroup.add(check);
-            opponentPanel.add(check);
+            listaPanel.add(check);
         }
+
+        JScrollPane scrollOponentes = crearScrollLista(listaPanel, 330, 180);
 
         gbc.gridy = 2;
         gbc.insets = new Insets(0, 0, 18, 0);
-        derecho.add(opponentPanel, gbc);
+        derecho.add(scrollOponentes, gbc);
 
         JLabel difficultyTitle = crearTexto("CHOOSE DIFFICULTY", new Color(0xC893C9), 16f);
 
@@ -782,12 +805,16 @@ public class MenusGUI extends JFrame {
             String rival = opponentGroup.getSelection().getActionCommand();
             String dificultad = difficultyGroup.getSelection().getActionCommand();
 
-            String respuesta = menus.iniciarChallenge(rival, dificultad);
-            JOptionPane.showMessageDialog(null, respuesta);
+            ChallengePartida challenge = menus.iniciarChallengePartida(rival, dificultad);
 
-            // Más adelante:
-            // cards.add(challengeStartedCard(), "Challenge Started");
-            // cardLayout.show(cards, "Challenge Started");
+            if (challenge == null) {
+                JOptionPane.showMessageDialog(null, "Could not start challenge.");
+                return;
+            }
+
+            JOptionPane.showMessageDialog(null, "Challenge started.");
+
+            mostrarArcadeGifAntesChallenge(challenge);
         });
 
         JPanel botones = new JPanel(new FlowLayout(FlowLayout.CENTER, 18, 0));
@@ -903,7 +930,8 @@ public class MenusGUI extends JFrame {
         gbc.insets = new Insets(0, 0, 20, 0);
         derecho.add(subtitulo, gbc);
 
-        JPanel listaPanel = new JPanel(new GridLayout(0, 1, 0, 5));
+        JPanel listaPanel = new JPanel();
+        listaPanel.setLayout(new BoxLayout(listaPanel, BoxLayout.Y_AXIS));
         listaPanel.setOpaque(false);
 
         ArrayList<JCheckBox> checks = new ArrayList<JCheckBox>();
@@ -915,9 +943,11 @@ public class MenusGUI extends JFrame {
             listaPanel.add(check);
         }
 
+        JScrollPane scrollAmigos = crearScrollLista(listaPanel, 330, 260);
+
         gbc.gridy = 3;
         gbc.insets = new Insets(0, 0, 0, 0);
-        derecho.add(listaPanel, gbc);
+        derecho.add(scrollAmigos, gbc);
 
         remove.addActionListener(e -> {
             ArrayList<String> seleccionados = new ArrayList<String>();
@@ -988,17 +1018,20 @@ public class MenusGUI extends JFrame {
         gbc.insets = new Insets(0, 0, 28, 0);
         derecho.add(botones, gbc);
 
-        JPanel listaPanel = new JPanel(new GridLayout(0, 1, 0, 5));
+        JPanel listaPanel = new JPanel();
+        listaPanel.setLayout(new BoxLayout(listaPanel, BoxLayout.Y_AXIS));
         listaPanel.setOpaque(false);
 
         ArrayList<JCheckBox> checks = new ArrayList<JCheckBox>();
 
         cargarUsuariosFindFriends(listaPanel, checks, "");
 
+        JScrollPane scrollUsuarios = crearScrollLista(listaPanel, 330, 260);
+
         gbc.gridy = 3;
         gbc.anchor = GridBagConstraints.WEST;
         gbc.insets = new Insets(0, 0, 0, 0);
-        derecho.add(listaPanel, gbc);
+        derecho.add(scrollUsuarios, gbc);
 
         searchBtn.addActionListener(e -> {
             String filtro = searchField.getText().trim();
@@ -1207,6 +1240,7 @@ public class MenusGUI extends JFrame {
             String respuesta = menus.desactivarCuentaActual();
             JOptionPane.showMessageDialog(null, respuesta);
 
+            limpiarCardsAutenticacion();
             cardLayout.show(cards, CARD_MENU_INICIO);
         });
 
@@ -1269,6 +1303,7 @@ public class MenusGUI extends JFrame {
             JOptionPane.showMessageDialog(null, respuesta);
 
             if (respuesta.equals("Account deleted successfully.")) {
+                limpiarCardsAutenticacion();
                 cardLayout.show(cards, CARD_MENU_INICIO);
             }
         });
@@ -1566,6 +1601,528 @@ public class MenusGUI extends JFrame {
         return crearMenuLayout("MY PROFILE", derecho);
     }
 
+    private void mostrarArcadeGifAntesChallenge(ChallengePartida challenge) {
+        JPanel gifCard = arcadeGifCard();
+
+        cards.add(gifCard, CARD_ARCADE_GIF);
+        cardLayout.show(cards, CARD_ARCADE_GIF);
+
+        Timer timerGif = new Timer(3000, e -> {
+            ((Timer) e.getSource()).stop();
+
+            cards.add(inicioChallengeCard(challenge), CARD_INICIO_CHALLENGE);
+            cardLayout.show(cards, CARD_INICIO_CHALLENGE);
+
+            Timer timerInicio = new Timer(3000, ev -> {
+                ((Timer) ev.getSource()).stop();
+
+                mostrarChallengeCardLimpio();
+
+                FlowFreeGUI juego = new FlowFreeGUI(
+                        menus,
+                        this,
+                        challenge.getNivel(),
+                        true,
+                        challenge.getId()
+                );
+
+                juego.setVisible(true);
+            });
+
+            timerInicio.setRepeats(false);
+            timerInicio.start();
+        });
+
+        timerGif.setRepeats(false);
+        timerGif.start();
+    }
+
+    private JPanel arcadeGifCard() {
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.setBackground(Color.BLACK);
+
+        JLabel gif = new JLabel();
+        gif.setHorizontalAlignment(SwingConstants.CENTER);
+        gif.setVerticalAlignment(SwingConstants.CENTER);
+        gif.setIcon(new ImageIcon("src/ashley/galatea/progra2/proyecto2/assets/arcade.gif"));
+
+        panel.add(gif, BorderLayout.CENTER);
+
+        return panel;
+    }
+
+    private JPanel inicioChallengeCard(ChallengePartida challenge) {
+        BackgroundPanel panel = new BackgroundPanel("src/ashley/galatea/progra2/proyecto2/assets/backgroung_challenge.png");
+        panel.setLayout(new GridBagLayout());
+
+        JLabel mensaje = new JLabel(
+            "<html><div style='text-align:center;'>"
+            + "CHALLENGE STARTED<br><br>"
+            + "The arcade won't repair itself.<br>"
+            + "Time to prove your skills.<br><br>"
+            + "Hope your rival knows how to handle loose wires."
+            + "</div></html>"
+        );
+
+        mensaje.setForeground(Color.WHITE);
+        mensaje.setFont(arcadeFont.deriveFont(Font.PLAIN, 24f));
+        mensaje.setHorizontalAlignment(SwingConstants.CENTER);
+
+        panel.add(mensaje);
+
+        return panel;
+    }
+
+    private JPanel myStatsCard() {
+        JPanel derecho = new JPanel(new GridBagLayout());
+        derecho.setOpaque(false);
+
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.gridx = 0;
+
+        JLabel titulo = crearTexto("[ MY STATS ]", new Color(0xC893C9), 28f);
+
+        gbc.gridy = 0;
+        gbc.insets = new Insets(0, 0, 25, 0);
+        derecho.add(titulo, gbc);
+
+        JPanel statsPanel = new JPanel(new GridLayout(2, 3, 16, 18));
+        statsPanel.setOpaque(false);
+
+        statsPanel.add(crearCajaStat("GAMES PLAYED", menus.obtenerGamesPlayedStats()));
+        statsPanel.add(crearCajaStat("LEVELS COMPLETED", menus.obtenerLevelsCompletedStats()));
+        statsPanel.add(crearCajaStat("AVG. TIME PER LEVEL", menus.obtenerAvgTimePerLevelStats()));
+        statsPanel.add(crearCajaStat("CHALLENGES WON", menus.obtenerChallengesWonStats()));
+        statsPanel.add(crearCajaStat("SCORE", menus.obtenerScoreStats()));
+        statsPanel.add(crearCajaStat("RANKING", menus.obtenerRankingStats()));
+
+        gbc.gridy = 1;
+        gbc.insets = new Insets(0, 0, 24, 0);
+        derecho.add(statsPanel, gbc);
+
+        JLabel rankingTitle = crearTexto("[ PERFORMANCE RANKINGS ]", new Color(0xFFEAFF), 15f);
+
+        gbc.gridy = 2;
+        gbc.insets = new Insets(0, 0, 14, 0);
+        derecho.add(rankingTitle, gbc);
+
+        JPanel botonesRanking = new JPanel(new GridLayout(1, 2, 22, 0));
+        botonesRanking.setOpaque(false);
+
+        JButton general = crearBotonBevel("GENERAL RANKING");
+        general.setPreferredSize(new Dimension(150, 35));
+
+        general.addActionListener(e -> {
+            cards.add(generalRankingCard(), CARD_GENERAL_RANKING);
+            cardLayout.show(cards, CARD_GENERAL_RANKING);
+        });
+
+        JButton friends = crearBotonBevel("FRIENDS RANKING");
+        friends.setPreferredSize(new Dimension(150, 35));
+
+        friends.addActionListener(e -> {
+            cards.add(friendsRankingCard(), CARD_FRIENDS_RANKING);
+            cardLayout.show(cards, CARD_FRIENDS_RANKING);
+        });
+
+        botonesRanking.add(general);
+        botonesRanking.add(friends);
+
+        gbc.gridy = 3;
+        gbc.insets = new Insets(0, 0, 24, 0);
+        derecho.add(botonesRanking, gbc);
+
+        JLabel compareTitle = crearTexto("[ COMPARE WITH PLAYER ]", new Color(0xFFEAFF), 15f);
+
+        gbc.gridy = 4;
+        gbc.insets = new Insets(0, 0, 12, 0);
+        derecho.add(compareTitle, gbc);
+
+        JTextField searchField = crearTextField();
+        searchField.setPreferredSize(new Dimension(230, 32));
+
+        JButton searchBtn = new JButton("⌕");
+        searchBtn.setPreferredSize(new Dimension(45, 32));
+
+        JPanel searchPanel = new JPanel(new GridBagLayout());
+        searchPanel.setOpaque(false);
+
+        GridBagConstraints sgbc = new GridBagConstraints();
+        sgbc.gridy = 0;
+        sgbc.gridx = 0;
+        sgbc.insets = new Insets(0, 0, 0, 8);
+        searchPanel.add(searchField, sgbc);
+
+        sgbc.gridx = 1;
+        sgbc.insets = new Insets(0, 0, 0, 0);
+        searchPanel.add(searchBtn, sgbc);
+
+        gbc.gridy = 5;
+        gbc.insets = new Insets(0, 0, 10, 0);
+        derecho.add(searchPanel, gbc);
+
+        JPanel listaPanel = new JPanel();
+        listaPanel.setLayout(new BoxLayout(listaPanel, BoxLayout.Y_AXIS));
+        listaPanel.setOpaque(false);
+
+        ArrayList<JCheckBox> checks = new ArrayList<JCheckBox>();
+        cargarUsuariosCompareStats(listaPanel, checks, "");
+
+        JScrollPane scroll = crearScrollLista(listaPanel, 280, 80);
+
+        gbc.gridy = 6;
+        gbc.insets = new Insets(0, 0, 12, 0);
+        derecho.add(scroll, gbc);
+
+        searchBtn.addActionListener(e -> {
+            cargarUsuariosCompareStats(listaPanel, checks, searchField.getText().trim());
+            listaPanel.revalidate();
+            listaPanel.repaint();
+        });
+
+        JButton compare = crearBotonBevel("COMPARE STATS");
+        compare.setPreferredSize(new Dimension(140, 35));
+
+        compare.addActionListener(e -> {
+            String usernameSeleccionado = "";
+
+            for (int i = 0; i < checks.size(); i++) {
+                if (checks.get(i).isSelected()) {
+                    usernameSeleccionado = checks.get(i).getActionCommand();
+                }
+            }
+
+            if (usernameSeleccionado.length() == 0) {
+                JOptionPane.showMessageDialog(null, "Debe seleccionar un jugador.");
+                return;
+            }
+
+            cards.add(compareStatsCard(usernameSeleccionado), CARD_COMPARE_STATS);
+            cardLayout.show(cards, CARD_COMPARE_STATS);
+        });
+
+        gbc.gridy = 7;
+        gbc.insets = new Insets(0, 0, 0, 0);
+        derecho.add(compare, gbc);
+
+        return crearMenuLayout("MY STATS", derecho);
+    }
+
+    private JPanel generalRankingCard() {
+        JPanel derecho = new JPanel(new GridBagLayout());
+        derecho.setOpaque(false);
+
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.gridx = 0;
+
+        JLabel titulo = crearTexto("[ GENERAL RANKING ]", new Color(0xC893C9), 28f);
+
+        gbc.gridy = 0;
+        gbc.insets = new Insets(0, 0, 30, 0);
+        derecho.add(titulo, gbc);
+
+        String[] columnas = {"#", "PLAYER", "SCORE", "LEVELS", "AVG TIME", "HOURS PLAYED"};
+
+        ArrayList<String[]> ranking = menus.obtenerGeneralRanking();
+        String[][] datos = new String[ranking.size()][6];
+
+        for (int i = 0; i < ranking.size(); i++) {
+            datos[i] = ranking.get(i);
+        }
+
+        JTable tabla = new JTable(datos, columnas);
+        tabla.setOpaque(false);
+        tabla.setBackground(new Color(0, 0, 0, 0));
+        tabla.setForeground(Color.WHITE);
+        tabla.setFont(arcadeFont.deriveFont(Font.PLAIN, 13f));
+        tabla.setRowHeight(24);
+        tabla.setEnabled(false);
+        tabla.setShowGrid(false);
+
+        tabla.getTableHeader().setOpaque(true);
+        tabla.getTableHeader().setBackground(new Color(0xD4D4D4));
+        tabla.getTableHeader().setForeground(Color.BLACK);
+        tabla.getTableHeader().setFont(arcadeFont.deriveFont(Font.PLAIN, 9f));
+        tabla.getTableHeader().setPreferredSize(new Dimension(0, 24));
+
+        javax.swing.table.DefaultTableCellRenderer headerRenderer =
+                (javax.swing.table.DefaultTableCellRenderer) tabla.getTableHeader().getDefaultRenderer();
+
+        headerRenderer.setHorizontalAlignment(SwingConstants.CENTER);
+
+        JScrollPane scroll = new JScrollPane(tabla);
+        scroll.setPreferredSize(new Dimension(560, 230));
+        scroll.setOpaque(false);
+        scroll.getViewport().setOpaque(false);
+        scroll.setBorder(BorderFactory.createEmptyBorder());
+
+        gbc.gridy = 1;
+        gbc.insets = new Insets(0, 0, 32, 0);
+        derecho.add(scroll, gbc);
+
+        JButton back = crearBotonBevel("BACK");
+        back.setPreferredSize(new Dimension(90, 38));
+
+        back.addActionListener(e -> {
+            cards.add(myStatsCard(), CARD_MY_STATS);
+            cardLayout.show(cards, CARD_MY_STATS);
+        });
+
+        gbc.gridy = 2;
+        gbc.insets = new Insets(0, 0, 0, 0);
+        derecho.add(back, gbc);
+
+        return crearMenuLayout("MY STATS", derecho);
+    }
+
+    private JPanel friendsRankingCard() {
+        JPanel derecho = new JPanel(new GridBagLayout());
+        derecho.setOpaque(false);
+
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.gridx = 0;
+
+        JLabel titulo = crearTexto("[ FRIENDS RANKING ]", new Color(0xC893C9), 28f);
+
+        gbc.gridy = 0;
+        gbc.insets = new Insets(0, 0, 30, 0);
+        derecho.add(titulo, gbc);
+
+        String[] columnas = {"#", "PLAYER", "SCORE", "LEVELS", "AVG TIME", "HOURS PLAYED"};
+
+        ArrayList<String[]> ranking = menus.obtenerFriendsRanking();
+        String[][] datos = new String[ranking.size()][6];
+
+        for (int i = 0; i < ranking.size(); i++) {
+            datos[i] = ranking.get(i);
+        }
+
+        JTable tabla = new JTable(datos, columnas);
+        tabla.setOpaque(false);
+        tabla.setBackground(new Color(0, 0, 0, 0));
+        tabla.setForeground(Color.WHITE);
+        tabla.setFont(arcadeFont.deriveFont(Font.PLAIN, 12f));
+        tabla.setRowHeight(30);
+        tabla.setEnabled(false);
+        tabla.setShowGrid(false);
+
+        tabla.getTableHeader().setOpaque(true);
+        tabla.getTableHeader().setBackground(new Color(0xD4D4D4));
+        tabla.getTableHeader().setForeground(Color.BLACK);
+        tabla.getTableHeader().setFont(arcadeFont.deriveFont(Font.PLAIN, 11f));
+        tabla.getTableHeader().setPreferredSize(new Dimension(0, 30));
+
+        javax.swing.table.DefaultTableCellRenderer headerRenderer =
+                (javax.swing.table.DefaultTableCellRenderer) tabla.getTableHeader().getDefaultRenderer();
+
+        headerRenderer.setHorizontalAlignment(SwingConstants.CENTER);
+
+        JScrollPane scroll = new JScrollPane(tabla);
+        scroll.setPreferredSize(new Dimension(560, 230));
+        scroll.setOpaque(false);
+        scroll.getViewport().setOpaque(false);
+        scroll.setBorder(BorderFactory.createEmptyBorder());
+
+        gbc.gridy = 1;
+        gbc.insets = new Insets(0, 0, 32, 0);
+        derecho.add(scroll, gbc);
+
+        JButton back = crearBotonBevel("BACK");
+        back.setPreferredSize(new Dimension(90, 38));
+
+        back.addActionListener(e -> {
+            cards.add(myStatsCard(), CARD_MY_STATS);
+            cardLayout.show(cards, CARD_MY_STATS);
+        });
+
+        gbc.gridy = 2;
+        gbc.insets = new Insets(0, 0, 0, 0);
+        derecho.add(back, gbc);
+
+        return crearMenuLayout("MY STATS", derecho);
+    }
+
+    private JPanel compareStatsCard(String usernameComparar) {
+        JPanel derecho = new JPanel(new GridBagLayout());
+        derecho.setOpaque(false);
+
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.gridx = 0;
+
+        JLabel titulo = crearTexto("[ COMPARE STATS ]", new Color(0xC893C9), 28f);
+
+        gbc.gridy = 0;
+        gbc.insets = new Insets(0, 0, 30, 0);
+        derecho.add(titulo, gbc);
+
+        String[] columnas = {"#", "PLAYER", "SCORE", "LEVELS", "AVG TIME", "HOURS PLAYED"};
+
+        ArrayList<String[]> ranking = menus.obtenerCompareStats(usernameComparar);
+        String[][] datos = new String[ranking.size()][6];
+
+        for (int i = 0; i < ranking.size(); i++) {
+            datos[i] = ranking.get(i);
+        }
+
+        JTable tabla = new JTable(datos, columnas);
+        tabla.setOpaque(false);
+        tabla.setBackground(new Color(0, 0, 0, 0));
+        tabla.setForeground(Color.WHITE);
+        tabla.setFont(arcadeFont.deriveFont(Font.PLAIN, 12f));
+        tabla.setRowHeight(30);
+        tabla.setEnabled(false);
+        tabla.setShowGrid(false);
+
+        tabla.getTableHeader().setOpaque(true);
+        tabla.getTableHeader().setBackground(new Color(0xD4D4D4));
+        tabla.getTableHeader().setForeground(Color.BLACK);
+        tabla.getTableHeader().setFont(arcadeFont.deriveFont(Font.PLAIN, 11f));
+        tabla.getTableHeader().setPreferredSize(new Dimension(0, 30));
+
+        javax.swing.table.DefaultTableCellRenderer headerRenderer =
+                (javax.swing.table.DefaultTableCellRenderer) tabla.getTableHeader().getDefaultRenderer();
+
+        headerRenderer.setHorizontalAlignment(SwingConstants.CENTER);
+
+        JScrollPane scroll = new JScrollPane(tabla);
+        scroll.setPreferredSize(new Dimension(560, 150));
+        scroll.setOpaque(false);
+        scroll.getViewport().setOpaque(false);
+        scroll.setBorder(BorderFactory.createEmptyBorder());
+
+        gbc.gridy = 1;
+        gbc.insets = new Insets(0, 0, 32, 0);
+        derecho.add(scroll, gbc);
+
+        JButton back = crearBotonBevel("BACK");
+        back.setPreferredSize(new Dimension(90, 38));
+
+        back.addActionListener(e -> {
+            cards.add(myStatsCard(), CARD_MY_STATS);
+            cardLayout.show(cards, CARD_MY_STATS);
+        });
+
+        gbc.gridy = 2;
+        gbc.insets = new Insets(0, 0, 0, 0);
+        derecho.add(back, gbc);
+
+        return crearMenuLayout("MY STATS", derecho);
+    }
+
+    private JPanel whatsNewCard() {
+        JPanel derecho = new JPanel(new GridBagLayout());
+        derecho.setOpaque(false);
+
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.gridx = 0;
+
+        JLabel titulo = crearTexto("[ WHAT'S NEW ]", new Color(0xC893C9), 28f);
+
+        gbc.gridy = 0;
+        gbc.insets = new Insets(0, 0, 25, 0);
+        derecho.add(titulo, gbc);
+
+        JPanel lista = new JPanel();
+        lista.setLayout(new BoxLayout(lista, BoxLayout.Y_AXIS));
+        lista.setOpaque(false);
+
+        ArrayList<ChallengePartida> pendientes = menus.obtenerChallengesPendientes();
+
+        if (pendientes.size() == 0) {
+            JLabel vacio = crearTexto("NO NEW CHALLENGES", Color.WHITE, 14f);
+            lista.add(vacio);
+        }
+
+        for (int i = 0; i < pendientes.size(); i++) {
+            lista.add(crearItemChallenge(pendientes.get(i)));
+
+            if (i < pendientes.size() - 1) {
+                JLabel linea = crearTexto("---------------------------------------------", Color.WHITE, 12f);
+                lista.add(Box.createVerticalStrut(12));
+                lista.add(linea);
+                lista.add(Box.createVerticalStrut(12));
+            }
+        }
+
+        JScrollPane scroll = crearScrollLista(lista, 500, 360);
+
+        gbc.gridy = 1;
+        gbc.insets = new Insets(0, 0, 0, 0);
+        derecho.add(scroll, gbc);
+
+        return crearMenuLayout("WHAT'S NEW", derecho);
+    }
+
+    private JPanel crearItemChallenge(ChallengePartida challenge) {
+        JPanel item = new JPanel(new GridBagLayout());
+        item.setOpaque(false);
+
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.gridx = 0;
+        gbc.anchor = GridBagConstraints.WEST;
+
+        JLabel title = crearTexto("NEW CHALLENGE!", new Color(0xE5B7E6), 13f);
+
+        gbc.gridy = 0;
+        gbc.insets = new Insets(0, 0, 10, 0);
+        item.add(title, gbc);
+
+        JLabel retador = new JLabel(
+                "<html><span style='color:#c893c9;'>"
+                + challenge.getJugador1().toUpperCase()
+                + "</span><span style='color:white;'> CHALLENGED YOU!</span></html>"
+        );
+        retador.setFont(arcadeFont.deriveFont(Font.PLAIN, 12f));
+
+        gbc.gridy = 1;
+        gbc.insets = new Insets(0, 0, 2, 0);
+        item.add(retador, gbc);
+
+        JLabel dificultad = new JLabel(
+                "<html><span style='color:white;'>LEVEL: </span>"
+                + "<span style='color:#c893c9;'>"
+                + challenge.getDificultad()
+                + "</span></html>"
+        );
+        dificultad.setFont(arcadeFont.deriveFont(Font.PLAIN, 12f));
+
+        gbc.gridy = 2;
+        item.add(dificultad, gbc);
+
+        JLabel tiempo = crearTexto(menus.obtenerTiempoChallengeAgo(challenge), Color.WHITE, 12f);
+
+        gbc.gridy = 3;
+        gbc.insets = new Insets(0, 0, 14, 0);
+        item.add(tiempo, gbc);
+
+        JButton accept = crearBotonTextoTransparente("[ ACCEPT ]");
+        JButton decline = crearBotonTextoTransparente("[ DECLINE ]");
+
+        accept.addActionListener(e -> {
+            JOptionPane.showMessageDialog(null, "Challenge accepted.");
+            mostrarArcadeGifAntesChallenge(challenge);
+        });
+
+        decline.addActionListener(e -> {
+            String respuesta = menus.declinarChallenge(challenge.getId());
+            JOptionPane.showMessageDialog(null, respuesta);
+
+            cards.add(whatsNewCard(), CARD_WHATS_NEW);
+            cardLayout.show(cards, CARD_WHATS_NEW);
+        });
+
+        JPanel botones = new JPanel(new FlowLayout(FlowLayout.LEFT, 24, 0));
+        botones.setOpaque(false);
+        botones.add(accept);
+        botones.add(decline);
+
+        gbc.gridy = 4;
+        gbc.insets = new Insets(0, 0, 0, 0);
+        item.add(botones, gbc);
+
+        return item;
+    }
+
     private JTable crearTablaActividad(ArrayList<Actividad> actividades) {
         String[] columnas = {"Time", "Log"};
         String[][] datos = new String[actividades.size()][2];
@@ -1739,18 +2296,26 @@ public class MenusGUI extends JFrame {
             cardLayout.show(cards, CARD_FRIENDS_HUB);
         });
 
-        stats.addActionListener(e -> cardLayout.show(cards, CARD_MY_STATS));
+        stats.addActionListener(e -> {
+            cards.add(myStatsCard(), CARD_MY_STATS);
+            cardLayout.show(cards, CARD_MY_STATS);
+        });
         
         profile.addActionListener(e -> {
             cards.add(myProfileCard(), CARD_MY_PROFILE);
             cardLayout.show(cards, CARD_MY_PROFILE);
         });
 
-        news.addActionListener(e -> cardLayout.show(cards, CARD_WHATS_NEW));
+        news.addActionListener(e -> {
+            cards.add(whatsNewCard(), CARD_WHATS_NEW);
+            cardLayout.show(cards, CARD_WHATS_NEW);
+        });
+
         settings.addActionListener(e -> cardLayout.show(cards, CARD_SETTINGS));
 
         logout.addActionListener(e -> {
             menus.logout();
+            limpiarCardsAutenticacion();
             cardLayout.show(cards, CARD_MENU_INICIO);
         });
 
@@ -1858,6 +2423,10 @@ public class MenusGUI extends JFrame {
         check.setFont(arcadeFont.deriveFont(Font.PLAIN, 13f));
         check.setFocusPainted(false);
         check.setCursor(new Cursor(Cursor.HAND_CURSOR));
+
+        check.setAlignmentX(Component.LEFT_ALIGNMENT);
+        check.setMaximumSize(new Dimension(280, 28));
+
         return check;
     }
 
@@ -1987,6 +2556,135 @@ public class MenusGUI extends JFrame {
             avatarIcon.paintIcon(this, g2, x, y);
 
         }
+    }
+
+    private void continuarDespuesDeSeleccionIdioma() {
+        if (loginPendienteDespuesIdioma) {
+            String username = usernamePendienteIdioma;
+            String password = passwordPendienteIdioma;
+
+            loginPendienteDespuesIdioma = false;
+            usernamePendienteIdioma = "";
+            passwordPendienteIdioma = "";
+
+            String respuesta = menus.login(username, password);
+
+            if (respuesta.equals("Welcome")) {
+                cards.add(menuPrincipalCard(), CARD_MENU_PRINCIPAL);
+                cardLayout.show(cards, CARD_MENU_PRINCIPAL);
+            } else {
+                JOptionPane.showMessageDialog(null, respuesta);
+                cardLayout.show(cards, CARD_LOGIN);
+            }
+
+        } else {
+            cardLayout.show(cards, CARD_MENU_INICIO);
+        }
+    }
+
+    private void limpiarCardsAutenticacion() {
+        cards.removeAll();
+
+        loginPendienteDespuesIdioma = false;
+        usernamePendienteIdioma = "";
+        passwordPendienteIdioma = "";
+
+        cards.add(menuInicioCard(), CARD_MENU_INICIO);
+        cards.add(logInCard(), CARD_LOGIN);
+        cards.add(signInCard(), CARD_SIGNIN);
+
+        cards.revalidate();
+        cards.repaint();
+    }
+
+    private JScrollPane crearScrollLista(JPanel listaPanel, int ancho, int alto) {
+        JScrollPane scroll = new JScrollPane(listaPanel);
+        scroll.setPreferredSize(new Dimension(ancho, alto));
+        scroll.setOpaque(false);
+        scroll.getViewport().setOpaque(false);
+
+        scroll.setBorder(BorderFactory.createEmptyBorder());
+        scroll.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+        scroll.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+
+        return scroll;
+    }
+
+    public void mostrarPlayCardActualizado() {
+        if (playCardActual != null) {
+            cards.remove(playCardActual);
+        }
+
+        playCardActual = playCard();
+        cards.add(playCardActual, CARD_INFO_NIVELES);
+
+        cardLayout.show(cards, CARD_INFO_NIVELES);
+
+        cards.revalidate();
+        cards.repaint();
+    }
+
+    private void mostrarChallengeCardLimpio() {
+        if (challengeCardActual != null) {
+            cards.remove(challengeCardActual);
+        }
+
+        challengeCardActual = challengeCard();
+        cards.add(challengeCardActual, CARD_CHALLENGE);
+
+        cardLayout.show(cards, CARD_CHALLENGE);
+
+        cards.revalidate();
+        cards.repaint();
+    }
+
+    private JPanel crearCajaStat(String titulo, String valor) {
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.setOpaque(false);
+        panel.setPreferredSize(new Dimension(150, 55));
+        panel.setBorder(BorderFactory.createLineBorder(new Color(0xD4D4D4)));
+
+        JLabel labelTitulo = crearTexto(titulo, Color.WHITE, 10f);
+        labelTitulo.setHorizontalAlignment(SwingConstants.CENTER);
+
+        JLabel labelValor = crearTexto(valor, new Color(0xFFEAFF), 12f);
+        labelValor.setHorizontalAlignment(SwingConstants.CENTER);
+
+        panel.add(labelTitulo, BorderLayout.NORTH);
+        panel.add(labelValor, BorderLayout.CENTER);
+
+        return panel;
+    }
+
+    private void cargarUsuariosCompareStats(JPanel listaPanel, ArrayList<JCheckBox> checks, String filtro) {
+        listaPanel.removeAll();
+        checks.clear();
+
+        ButtonGroup grupo = new ButtonGroup();
+
+        ArrayList<String> usuarios = menus.buscarUsuariosParaCompararStats(filtro);
+
+        for (int i = 0; i < usuarios.size(); i++) {
+            JCheckBox check = crearCheckBox(usuarios.get(i).toUpperCase());
+            check.setActionCommand(usuarios.get(i));
+
+            grupo.add(check);
+            checks.add(check);
+            listaPanel.add(check);
+        }
+    }
+
+    private JButton crearBotonTextoTransparente(String texto) {
+        JButton boton = new JButton(texto);
+        boton.setFont(arcadeFont.deriveFont(Font.PLAIN, 12f));
+        boton.setForeground(Color.WHITE);
+        boton.setOpaque(false);
+        boton.setContentAreaFilled(false);
+        boton.setBorderPainted(false);
+        boton.setFocusPainted(false);
+        boton.setCursor(new Cursor(Cursor.HAND_CURSOR));
+
+        return boton;
     }
 
 }
