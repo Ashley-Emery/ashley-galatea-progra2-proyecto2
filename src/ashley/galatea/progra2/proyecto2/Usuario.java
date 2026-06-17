@@ -53,6 +53,7 @@ public class Usuario implements Serializable {
     private boolean cuentaActiva;
     private int retosGanados;
     private String avatarColorHex;
+    private String dificultadPreferida;
 
     private boolean estadoCuentaInicializado;
 
@@ -73,6 +74,7 @@ public class Usuario implements Serializable {
         this.posicionMusicaSegundos = 0;
         this.idioma = "Español";
         this.controles = "Mouse";
+        this.dificultadPreferida = "NEON CIRCUIT";
 
         this.nivelDesbloqueado = 1;
         this.nivelesCompletados = 0;
@@ -205,6 +207,22 @@ public class Usuario implements Serializable {
 
     public String getAvatarColorHex() {
         return avatarColorHex;
+    }
+
+    public String getDificultadPreferida() {
+        if (dificultadPreferida == null) {
+            return "NEON CIRCUIT";
+        }
+
+        return dificultadPreferida;
+    }
+
+    public void setDificultadPreferida(String dificultadPreferida) {
+        if (dificultadPreferida == null || dificultadPreferida.length() == 0) {
+            this.dificultadPreferida = "NEON CIRCUIT";
+        } else {
+            this.dificultadPreferida = dificultadPreferida;
+        }
     }
 
     public void setAvatar(String avatar) {

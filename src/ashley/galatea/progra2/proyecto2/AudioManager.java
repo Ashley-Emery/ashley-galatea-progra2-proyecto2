@@ -78,38 +78,6 @@ public class AudioManager {
         });
     }
 
-    public void iniciarMusicaPartida() {
-        if (!musicaActiva || volumenMusica <= 0) {
-            return;
-        }
-
-        Platform.runLater(() -> {
-            try {
-                if (musicaPlayer != null) {
-                    musicaPlayer.play();
-                    return;
-                }
-
-                File file = new File(ASSETS_DIR + "long-day.mp3");
-                Media media = new Media(file.toURI().toString());
-
-                musicaPlayer = new MediaPlayer(media);
-                musicaPlayer.setVolume(volumenMusica / 100.0);
-                musicaPlayer.setCycleCount(MediaPlayer.INDEFINITE);
-
-                musicaPlayer.setOnReady(() -> {
-                    if (posicionMusicaSegundos > 0) {
-                        musicaPlayer.seek(Duration.seconds(posicionMusicaSegundos));
-                    }
-                    musicaPlayer.play();
-                });
-
-            } catch (Exception e) {
-                System.out.println("No se pudo reproducir música: " + e.getMessage());
-            }
-        });
-    }
-
     public void detenerMusica() {
         guardarEstadoActual();
 
@@ -180,20 +148,89 @@ public class AudioManager {
         return dialogo;
     }
 
+    public void iniciarMusicaPartida() {
+        if (!musicaActiva || volumenMusica <= 0) {
+            return;
+        }
+
+        Platform.runLater(() -> {
+            crearOReproducirMusica();
+        });
+    }
+
+    private void crearOReproducirMusica() {
+        try {
+            if (!musicaActiva || volumenMusica <= 0) {
+                return;
+            }
+
+            if (musicaPlayer != null) {
+                musicaPlayer.setMute(false);
+                musicaPlayer.setVolume(volumenMusica / 100.0);
+                musicaPlayer.play();
+                return;
+            }
+
+            File file = new File(ASSETS_DIR + "long-day.mp3");
+
+            if (!file.exists()) {
+                System.out.println("No existe el archivo de música: " + file.getAbsolutePath());
+                return;
+            }
+
+            Media media = new Media(file.toURI().toString());
+            musicaPlayer = new MediaPlayer(media);
+
+            musicaPlayer.setVolume(volumenMusica / 100.0);
+            musicaPlayer.setMute(false);
+            musicaPlayer.setCycleCount(MediaPlayer.INDEFINITE);
+
+            musicaPlayer.setOnReady(() -> {
+                if (posicionMusicaSegundos > 0) {
+                    musicaPlayer.seek(Duration.seconds(posicionMusicaSegundos));
+                }
+
+                musicaPlayer.play();
+            });
+
+        } catch (Exception e) {
+            System.out.println("No se pudo reproducir música: " + e.getMessage());
+        }
+    }
+
     public void setVolumenSFX(int volumenSFX) {
         this.volumenSFX = volumenSFX;
-        this.sfxActivo = volumenSFX > 0;
+
+        if (volumenSFX > 0) {
+            this.sfxActivo = true;
+        } else {
+            this.sfxActivo = false;
+        }
+
         guardarConfigAudio();
     }
 
     public void setVolumenMusica(int volumenMusica) {
         this.volumenMusica = volumenMusica;
-        this.musicaActiva = volumenMusica > 0;
+
+        if (volumenMusica > 0) {
+            this.musicaActiva = true;
+        } else {
+            this.musicaActiva = false;
+        }
 
         Platform.runLater(() -> {
             if (musicaPlayer != null) {
                 musicaPlayer.setVolume(volumenMusica / 100.0);
                 musicaPlayer.setMute(!musicaActiva);
+
+                if (musicaActiva) {
+                    musicaPlayer.play();
+                } else {
+                    musicaPlayer.pause();
+                }
+            } else if (musicaActiva) {
+                crearOReproducirMusica();
             }
         });
 
@@ -220,4 +257,30 @@ public class AudioManager {
             );
         }
     }
+
+    public void setMusicaActiva(boolean musicaActiva) {
+        this.musicaActiva = musicaActiva;
+
+        Platform.runLater(() -> {
+            if (musicaPlayer != null) {
+                musicaPlayer.setMute(!musicaActiva);
+
+                if (musicaActiva && volumenMusica > 0) {
+                    musicaPlayer.play();
+                } else {
+                    musicaPlayer.pause();
+                }
+            } else if (musicaActiva && volumenMusica > 0) {
+                crearOReproducirMusica();
+            }
+        });
+
+        guardarConfigAudio();
+    }
+
+    public void setSfxActivo(boolean sfxActivo) {
+        this.sfxActivo = sfxActivo;
+        guardarConfigAudio();
+    }
+
 }

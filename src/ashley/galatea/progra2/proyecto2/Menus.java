@@ -197,7 +197,31 @@ public class Menus {
 
     public String obtenerCantidadAmigosPerfil() {
         if (usuarioActual == null) return "0";
-        return String.valueOf(usuarioActual.getAmigosRivales().size());
+        return String.valueOf(obtenerAmigosActuales().size());
+    }
+
+    public String obtenerDificultadPreferidaPerfil() {
+        if (usuarioActual == null) return "NEON CIRCUIT";
+        return usuarioActual.getDificultadPreferida();
+    }
+
+    private boolean usuarioDisponible(String username) {
+        Usuario usuario = cargarUsuario(limpiarTexto(username));
+
+        return usuario != null && usuario.isCuentaActiva();
+    }
+
+    private ArrayList<Usuario> obtenerUsuariosActivos() {
+        ArrayList<Usuario> activos = new ArrayList<Usuario>();
+        ArrayList<Usuario> usuarios = obtenerUsuarios();
+
+        for (int i = 0; i < usuarios.size(); i++) {
+            if (usuarios.get(i).isCuentaActiva()) {
+                activos.add(usuarios.get(i));
+            }
+        }
+
+        return activos;
     }
 
     // =========================================================
@@ -393,7 +417,11 @@ public class Menus {
             return "Debe iniciar sesión.";
         }
 
+        String username = usuarioActual.getUsername();
+
         registrarAccountActivity("User disabled account");
+
+        resolverChallengesPorCuentaInactiva(username);
 
         usuarioActual.setCuentaActiva(false);
         usuarioActual.cerrarSesion();
@@ -428,9 +456,32 @@ public class Menus {
 
         usuarioActual = usuario;
         guardarUsuario(usuarioActual);
+
+        restaurarAmistadesAlReactivar(username);
+
         registrarAccountActivity("User restored account");
 
         return "Account restored successfully.";
+    }
+
+    private void restaurarAmistadesAlReactivar(String usernameReactivado) {
+        Usuario reactivado = cargarUsuario(usernameReactivado);
+
+        if (reactivado == null) {
+            return;
+        }
+
+        ArrayList<String> amigos = reactivado.getAmigosRivales();
+
+        for (int i = 0; i < amigos.size(); i++) {
+            String usernameAmigo = limpiarTexto(amigos.get(i));
+            Usuario amigo = cargarUsuario(usernameAmigo);
+
+            if (amigo != null && amigo.isCuentaActiva()) {
+                amigo.agregarAmigoRival(usernameReactivado);
+                guardarUsuario(amigo);
+            }
+        }
     }
 
     public String eliminarCuentaActual() {
@@ -440,6 +491,7 @@ public class Menus {
 
         String usernameEliminado = usuarioActual.getUsername();
 
+        resolverChallengesPorCuentaInactiva(usernameEliminado);
         limpiarUsuarioEliminadoDeOtrosUsuarios(usernameEliminado);
 
         File carpetaUsuario = new File(RUTA_USUARIOS + usernameEliminado);
@@ -547,11 +599,23 @@ public class Menus {
     }
 
     public ArrayList<String> obtenerAmigosActuales() {
+        ArrayList<String> amigosActivos = new ArrayList<String>();
+
         if (usuarioActual == null) {
-            return new ArrayList<String>();
+            return amigosActivos;
         }
 
-        return usuarioActual.getAmigosRivales();
+        ArrayList<String> amigos = usuarioActual.getAmigosRivales();
+
+        for (int i = 0; i < amigos.size(); i++) {
+            String amigo = limpiarTexto(amigos.get(i));
+
+            if (usuarioDisponible(amigo)) {
+                amigosActivos.add(amigo);
+            }
+        }
+
+        return amigosActivos;
     }
 
     public String eliminarAmigos(ArrayList<String> amigos) {
@@ -595,7 +659,7 @@ public class Menus {
 
         filtro = limpiarTexto(filtro);
 
-        ArrayList<Usuario> usuarios = obtenerUsuarios();
+        ArrayList<Usuario> usuarios = obtenerUsuariosActivos();
         ArrayList<String> amigos = usuarioActual.getAmigosRivales();
         String actual = usuarioActual.getUsername();
 
@@ -709,7 +773,7 @@ public class Menus {
         for (int i = 0; i < amigos.size(); i++) {
             String usernameAmigo = limpiarTexto(amigos.get(i));
 
-            if (existeUsuario(usernameAmigo)) {
+            if (usuarioDisponible(usernameAmigo)) {
                 oponentes.add(usernameAmigo);
             }
         }
@@ -724,7 +788,7 @@ public class Menus {
 
         usernameRival = limpiarTexto(usernameRival);
 
-        if (!existeUsuario(usernameRival)) {
+        if (!usuarioDisponible(usernameRival)) {
             return null;
         }
 
@@ -859,6 +923,54 @@ public class Menus {
 
     public ChallengePartida obtenerChallenge(String challengeId) {
         return cargarChallenge(challengeId);
+    }
+
+    private void resolverChallengesPorCuentaInactiva(String usernameInactivo) {
+        File carpeta = new File(RUTA_CHALLENGES);
+        File[] archivos = carpeta.listFiles();
+
+        if (archivos == null) {
+            return;
+        }
+
+        for (int i = 0; i < archivos.length; i++) {
+            if (archivos[i].isFile() && archivos[i].getName().endsWith(".dat")) {
+                String id = archivos[i].getName().replace(".dat", "");
+                ChallengePartida challenge = cargarChallenge(id);
+
+                if (challenge == null || challenge.isFinalizado()) {
+                    continue;
+                }
+
+                boolean participa =
+                        challenge.getJugador1().equals(usernameInactivo)
+                        || challenge.getJugador2().equals(usernameInactivo);
+
+                if (!participa) {
+                    continue;
+                }
+
+                challenge.finalizarPorCuentaInactiva(usernameInactivo);
+                guardarChallenge(challenge);
+
+                String ganador = challenge.getGanador();
+                Usuario usuarioGanador = cargarUsuario(ganador);
+
+                if (usuarioGanador != null && usuarioGanador.isCuentaActiva()) {
+                    usuarioGanador.sumarPuntuacion(50);
+                    usuarioGanador.sumarRetoGanado();
+                    guardarUsuario(usuarioGanador);
+
+                    guardarActividad(
+                            ganador,
+                            "game_activity.dat",
+                            "Challenge " + challenge.getId()
+                            + " was won because " + usernameInactivo
+                            + " disabled or deleted the account. User won 50 bonus points."
+                    );
+                }
+            }
+        }
     }
 
     // =========================================================
@@ -1231,6 +1343,65 @@ public class Menus {
         return idiomaSeleccionadoTemporal;
     }
 
+    public String obtenerIdiomaSettings() {
+        if (usuarioActual == null) return "English";
+        return usuarioActual.getIdioma();
+    }
+
+    public int obtenerVolumenMusicaSettings() {
+        if (usuarioActual == null) return 60;
+        return usuarioActual.getVolumenMusica();
+    }
+
+    public int obtenerVolumenSFXSettings() {
+        if (usuarioActual == null) return 80;
+        return usuarioActual.getVolumenSFX();
+    }
+
+    public boolean musicaActivaSettings() {
+        if (usuarioActual == null) return true;
+        return usuarioActual.isMusicaActiva();
+    }
+
+    public boolean sfxActivoSettings() {
+        if (usuarioActual == null) return true;
+        return usuarioActual.isSfxActivo();
+    }
+
+    public String obtenerDificultadPreferidaSettings() {
+        if (usuarioActual == null) return "NEON CIRCUIT";
+        return usuarioActual.getDificultadPreferida();
+    }
+
+    public String guardarSettingsUsuario(
+            String idioma,
+            boolean musicaActiva,
+            boolean sfxActivo,
+            int volumenMusica,
+            int volumenSFX,
+            String dificultadPreferida
+    ) {
+        if (usuarioActual == null) {
+            return "Debe iniciar sesión.";
+        }
+
+        usuarioActual.setIdioma(idioma);
+        usuarioActual.actualizarConfigAudio(
+                volumenSFX,
+                volumenMusica,
+                sfxActivo,
+                musicaActiva,
+                usuarioActual.getPosicionMusicaSegundos()
+        );
+        usuarioActual.setDificultadPreferida(dificultadPreferida);
+
+        guardarUsuario(usuarioActual);
+
+        registrarAccountActivity("User updated settings");
+
+        return "Settings saved successfully.";
+    }
+
     // =========================================================
     // PUNTUACION - PUNTAJE NIVELES Y CHALLENGES
     // =========================================================
@@ -1369,7 +1540,7 @@ public class Menus {
     public String obtenerRankingStats() {
         if (usuarioActual == null) return "#00";
 
-        ArrayList<Usuario> usuarios = obtenerUsuarios();
+        ArrayList<Usuario> usuarios = obtenerUsuariosActivos();
 
         Collections.sort(usuarios, new Comparator<Usuario>() {
             public int compare(Usuario a, Usuario b) {
@@ -1395,7 +1566,7 @@ public class Menus {
 
         filtro = limpiarTexto(filtro);
 
-        ArrayList<Usuario> usuarios = obtenerUsuarios();
+        ArrayList<Usuario> usuarios = obtenerUsuariosActivos();
         String actual = usuarioActual.getUsername();
 
         for (int i = 0; i < usuarios.size(); i++) {
@@ -1421,7 +1592,7 @@ public class Menus {
 
     public ArrayList<String[]> obtenerGeneralRanking() {
         ArrayList<String[]> ranking = new ArrayList<String[]>();
-        ArrayList<Usuario> usuarios = obtenerUsuarios();
+        ArrayList<Usuario> usuarios = obtenerUsuariosActivos();
 
         Collections.sort(usuarios, new Comparator<Usuario>() {
             public int compare(Usuario a, Usuario b) {
@@ -1472,7 +1643,7 @@ public class Menus {
         for (int i = 0; i < amigos.size(); i++) {
             Usuario amigo = cargarUsuario(amigos.get(i));
 
-            if (amigo != null) {
+            if (amigo != null && amigo.isCuentaActiva()) {
                 usuariosRanking.add(amigo);
             }
         }
@@ -1510,7 +1681,7 @@ public class Menus {
 
         Usuario comparado = cargarUsuario(limpiarTexto(usernameComparar));
 
-        if (comparado == null) {
+        if (comparado == null || !comparado.isCuentaActiva()) {
             return datos;
         }
 
@@ -1619,6 +1790,14 @@ public class Menus {
 
         long dias = horas / 24;
         return dias + "d ago";
+    }
+
+    // =========================================================
+    // NOTIFICACIONES
+    // =========================================================
+
+    public boolean hayNotificacionesPendientes() {
+        return obtenerChallengesPendientes().size() > 0;
     }
 
 }

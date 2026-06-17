@@ -69,6 +69,8 @@ public class MenusGUI extends JFrame {
     private JPanel playCardActual;
     private JPanel challengeCardActual;
 
+    private ArrayList<JComponent> indicadoresWhatsNew = new ArrayList<JComponent>();
+
     public MenusGUI() {
         menus = new Menus();
         cargarFuente();
@@ -98,6 +100,9 @@ public class MenusGUI extends JFrame {
         cardLayout.show(cards, CARD_LOADING);
 
         setVisible(true);
+
+        Timer timerNotificaciones = new Timer(1000, e -> actualizarIndicadoresWhatsNew());
+        timerNotificaciones.start();
     }
 
     private JPanel loadingCard() {
@@ -1153,10 +1158,11 @@ public class MenusGUI extends JFrame {
         agregarFilaPerfil(datos, "STATUS:", menus.obtenerStatusPerfil(), 1);
         agregarFilaPerfil(datos, "REGISTERED ON:", menus.obtenerFechaRegistroPerfil(), 2);
         agregarFilaPerfil(datos, "LAST LOGIN:", menus.obtenerUltimoLoginPerfil(), 3);
-        agregarFilaPerfil(datos, "LEVELS COMPLETED:", menus.obtenerNivelesCompletadosPerfil(), 4);
-        agregarFilaPerfil(datos, "CHALLENGES WON:", menus.obtenerRetosGanadosPerfil(), 5);
-        agregarFilaPerfil(datos, "SCORE:", menus.obtenerScorePerfil(), 6);
-        agregarFilaPerfil(datos, "FRIENDS:", menus.obtenerCantidadAmigosPerfil(), 7);
+        agregarFilaPerfil(datos, "DIFFICULTY MODE:", menus.obtenerDificultadPreferidaPerfil(), 4);
+        agregarFilaPerfil(datos, "LEVELS COMPLETED:", menus.obtenerNivelesCompletadosPerfil(), 5);
+        agregarFilaPerfil(datos, "CHALLENGES WON:", menus.obtenerRetosGanadosPerfil(), 6);
+        agregarFilaPerfil(datos, "SCORE:", menus.obtenerScorePerfil(), 7);
+        agregarFilaPerfil(datos, "FRIENDS:", menus.obtenerCantidadAmigosPerfil(), 8);
 
         pgbc.gridx = 1;
         pgbc.insets = new Insets(0, 0, 0, 0);
@@ -2053,6 +2059,193 @@ public class MenusGUI extends JFrame {
         return crearMenuLayout("WHAT'S NEW", derecho);
     }
 
+    private JPanel settingsCard() {
+        JPanel derecho = new JPanel(new GridBagLayout());
+        derecho.setOpaque(false);
+
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.gridx = 0;
+        gbc.anchor = GridBagConstraints.WEST;
+
+        JLabel titulo = crearTexto("[ SETTINGS ]", new Color(0xC893C9), 28f);
+
+        gbc.gridy = 0;
+        gbc.anchor = GridBagConstraints.CENTER;
+        gbc.insets = new Insets(0, 0, 28, 0);
+        derecho.add(titulo, gbc);
+
+        JPanel form = new JPanel(new GridBagLayout());
+        form.setOpaque(false);
+
+        GridBagConstraints fgbc = new GridBagConstraints();
+        fgbc.gridx = 0;
+        fgbc.anchor = GridBagConstraints.WEST;
+
+        JLabel languageTitle = crearTexto("LANGUAGE", new Color(0xE5B7E6), 13f);
+
+        JCheckBox english = crearCheckBox("ENGLISH");
+        JCheckBox spanish = crearCheckBox("SPANISH");
+
+        ButtonGroup idiomaGroup = new ButtonGroup();
+        idiomaGroup.add(english);
+        idiomaGroup.add(spanish);
+
+        String idiomaActual = menus.obtenerIdiomaSettings();
+
+        if (idiomaActual.equalsIgnoreCase("Spanish") || idiomaActual.equalsIgnoreCase("Español")) {
+            spanish.setSelected(true);
+        } else {
+            english.setSelected(true);
+        }
+
+        fgbc.gridy = 0;
+        fgbc.insets = new Insets(0, 0, 8, 0);
+        form.add(languageTitle, fgbc);
+
+        fgbc.gridy = 1;
+        form.add(english, fgbc);
+
+        fgbc.gridy = 2;
+        fgbc.insets = new Insets(0, 0, 18, 0);
+        form.add(spanish, fgbc);
+
+        JLabel audioTitle = crearTexto("AUDIO", new Color(0xE5B7E6), 13f);
+
+        JCheckBox enableMusic = crearCheckBox("ENABLE MUSIC");
+        JCheckBox enableSfx = crearCheckBox("ENABLE SOUND EFFECTS");
+
+        enableMusic.setSelected(menus.musicaActivaSettings());
+        enableSfx.setSelected(menus.sfxActivoSettings());
+
+        fgbc.gridy = 3;
+        fgbc.insets = new Insets(0, 0, 8, 0);
+        form.add(audioTitle, fgbc);
+
+        fgbc.gridy = 4;
+        form.add(enableMusic, fgbc);
+
+        fgbc.gridy = 5;
+        fgbc.insets = new Insets(0, 0, 18, 0);
+        form.add(enableSfx, fgbc);
+
+        JLabel musicTitle = crearTexto("MUSIC VOLUME", new Color(0xE5B7E6), 13f);
+        JSlider musicSlider = crearSliderSettings(menus.obtenerVolumenMusicaSettings());
+
+        fgbc.gridy = 6;
+        fgbc.insets = new Insets(0, 0, 4, 0);
+        form.add(musicTitle, fgbc);
+
+        fgbc.gridy = 7;
+        fgbc.insets = new Insets(0, 0, 18, 0);
+        form.add(musicSlider, fgbc);
+
+        JLabel sfxTitle = crearTexto("SFX VOLUME", new Color(0xE5B7E6), 13f);
+        JSlider sfxSlider = crearSliderSettings(menus.obtenerVolumenSFXSettings());
+
+        fgbc.gridy = 8;
+        fgbc.insets = new Insets(0, 0, 4, 0);
+        form.add(sfxTitle, fgbc);
+
+        fgbc.gridy = 9;
+        fgbc.insets = new Insets(0, 0, 18, 0);
+        form.add(sfxSlider, fgbc);
+
+        JLabel difficultyTitle = crearTexto("DEFAULT DIFFICULTY", new Color(0xE5B7E6), 13f);
+
+        String[] dificultades = {
+            "NEON CIRCUIT",
+            "POWER GRID",
+            "VOLTAGE RUN",
+            "ELECTRIC DRIFT",
+            "OVERLOAD"
+        };
+
+        ButtonGroup difficultyGroup = new ButtonGroup();
+        JPanel difficultyPanel = new JPanel(new GridLayout(0, 1, 0, 0));
+        difficultyPanel.setOpaque(false);
+
+        String dificultadActual = menus.obtenerDificultadPreferidaSettings();
+
+        for (int i = 0; i < dificultades.length; i++) {
+            JCheckBox check = crearCheckBox(dificultades[i]);
+            check.setActionCommand(dificultades[i]);
+
+            if (dificultades[i].equals(dificultadActual)) {
+                check.setSelected(true);
+            }
+
+            difficultyGroup.add(check);
+            difficultyPanel.add(check);
+        }
+
+        fgbc.gridy = 10;
+        fgbc.insets = new Insets(0, 0, 8, 0);
+        form.add(difficultyTitle, fgbc);
+
+        fgbc.gridy = 11;
+        fgbc.insets = new Insets(0, 0, 24, 0);
+        form.add(difficultyPanel, fgbc);
+
+        JPanel botones = new JPanel(new FlowLayout(FlowLayout.CENTER, 24, 0));
+        botones.setOpaque(false);
+
+        JButton cancel = crearBotonBevel("CANCEL");
+        JButton save = crearBotonBevel("SAVE");
+
+        cancel.setPreferredSize(new Dimension(105, 40));
+        save.setPreferredSize(new Dimension(90, 40));
+
+        cancel.addActionListener(e -> {
+            cards.add(settingsCard(), CARD_SETTINGS);
+            cardLayout.show(cards, CARD_SETTINGS);
+        });
+
+        save.addActionListener(e -> {
+            String idioma = english.isSelected() ? "English" : "Spanish";
+
+            String dificultad = "NEON CIRCUIT";
+            if (difficultyGroup.getSelection() != null) {
+                dificultad = difficultyGroup.getSelection().getActionCommand();
+            }
+
+            String respuesta = menus.guardarSettingsUsuario(
+                    idioma,
+                    enableMusic.isSelected(),
+                    enableSfx.isSelected(),
+                    musicSlider.getValue(),
+                    sfxSlider.getValue(),
+                    dificultad
+            );
+
+            JOptionPane.showMessageDialog(null, respuesta);
+
+            cards.add(settingsCard(), CARD_SETTINGS);
+            cardLayout.show(cards, CARD_SETTINGS);
+        });
+
+        botones.add(cancel);
+        botones.add(save);
+
+        fgbc.gridy = 12;
+        fgbc.anchor = GridBagConstraints.CENTER;
+        fgbc.insets = new Insets(0, 0, 0, 0);
+        form.add(botones, fgbc);
+
+        JScrollPane scrollSettings = new JScrollPane(form);
+        scrollSettings.setPreferredSize(new Dimension(430, 430));
+        scrollSettings.setOpaque(false);
+        scrollSettings.getViewport().setOpaque(false);
+        scrollSettings.setBorder(BorderFactory.createEmptyBorder());
+        scrollSettings.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+        scrollSettings.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+
+        gbc.gridy = 1;
+        gbc.anchor = GridBagConstraints.CENTER;
+        derecho.add(scrollSettings, gbc);
+
+        return crearMenuLayout("SETTINGS", derecho);
+    }
+
     private JPanel crearItemChallenge(ChallengePartida challenge) {
         JPanel item = new JPanel(new GridBagLayout());
         item.setOpaque(false);
@@ -2286,6 +2479,7 @@ public class MenusGUI extends JFrame {
         JButton stats = crearBotonMenu("MY STATS", new Color(0xC893C9), activo.equals("MY STATS"));
         JButton profile = crearBotonMenu("MY PROFILE", new Color(0xC893C9), activo.equals("MY PROFILE"));
         JButton news = crearBotonMenu("WHAT'S NEW", new Color(0xC893C9), activo.equals("WHAT'S NEW"));
+        JPanel newsWrapper = crearBotonMenuConIndicador(news);
         JButton settings = crearBotonMenu("SETTINGS", new Color(0xC893C9), activo.equals("SETTINGS"));
         JButton logout = crearBotonMenu("LOG OUT", new Color(0xE25B57), activo.equals("LOG OUT"));
 
@@ -2311,7 +2505,10 @@ public class MenusGUI extends JFrame {
             cardLayout.show(cards, CARD_WHATS_NEW);
         });
 
-        settings.addActionListener(e -> cardLayout.show(cards, CARD_SETTINGS));
+        settings.addActionListener(e -> {
+            cards.add(settingsCard(), CARD_SETTINGS);
+            cardLayout.show(cards, CARD_SETTINGS);
+        });
 
         logout.addActionListener(e -> {
             menus.logout();
@@ -2319,7 +2516,7 @@ public class MenusGUI extends JFrame {
             cardLayout.show(cards, CARD_MENU_INICIO);
         });
 
-        JButton[] botones = {home, friends, stats, profile, news, settings, logout};
+        Component[] botones = {home, friends, stats, profile, newsWrapper, settings, logout};
 
         for (int i = 0; i < botones.length; i++) {
             gbc.gridy = i + 1;
@@ -2685,6 +2882,50 @@ public class MenusGUI extends JFrame {
         boton.setCursor(new Cursor(Cursor.HAND_CURSOR));
 
         return boton;
+    }
+
+    private JSlider crearSliderSettings(int valor) {
+        JSlider slider = new JSlider(0, 100, valor);
+        slider.setPreferredSize(new Dimension(150, 28));
+        slider.setOpaque(false);
+        slider.setPaintTicks(false);
+        slider.setPaintLabels(false);
+        slider.setFocusable(false);
+        slider.setCursor(new Cursor(Cursor.HAND_CURSOR));
+
+        return slider;
+    }
+
+    private void actualizarIndicadoresWhatsNew() {
+        boolean mostrar = menus.hayNotificacionesPendientes();
+
+        for (int i = 0; i < indicadoresWhatsNew.size(); i++) {
+            indicadoresWhatsNew.get(i).setVisible(mostrar);
+            indicadoresWhatsNew.get(i).repaint();
+        }
+    }
+
+    private JPanel crearBotonMenuConIndicador(JButton boton) {
+        JPanel panel = new JPanel(null);
+        panel.setOpaque(false);
+        panel.setPreferredSize(new Dimension(180, 35));
+
+        boton.setBounds(0, 0, 180, 35);
+        panel.add(boton);
+
+        JLabel punto = new JLabel();
+        punto.setOpaque(true);
+        punto.setBackground(new Color(0xE25B57));
+        punto.setBounds(10, 10, 13, 13);
+
+        punto.setBorder(BorderFactory.createLineBorder(new Color(0xE25B57), 1));
+
+        panel.add(punto);
+        indicadoresWhatsNew.add(punto);
+
+        punto.setVisible(menus.hayNotificacionesPendientes());
+
+        return panel;
     }
 
 }

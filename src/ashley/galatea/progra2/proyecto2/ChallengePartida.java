@@ -142,4 +142,22 @@ public class ChallengePartida implements Serializable {
         ganador = jugador1;
         scoreJugador1 = 50;
     }
+
+    public void finalizarPorCuentaInactiva(String usernameInactivo) {
+        if (finalizado) {
+            return;
+        }
+
+        if (usernameInactivo.equals(jugador1)) {
+            finalizado = true;
+            declinado = true;
+            ganador = jugador2;
+            scoreJugador2 = 50;
+        } else if (usernameInactivo.equals(jugador2)) {
+            finalizado = true;
+            declinado = true;
+            ganador = jugador1;
+            scoreJugador1 = 50;
+        }
+    }
 }
