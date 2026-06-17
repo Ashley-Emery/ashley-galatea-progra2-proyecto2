@@ -35,6 +35,9 @@ public class ChallengePartida implements Serializable {
     private Date fechaCreacion;
     private boolean declinado = false;
 
+    private boolean rewardJugador1Claimed = false;
+    private boolean rewardJugador2Claimed = false;
+
     public ChallengePartida(String jugador1, String jugador2, String dificultad, int nivel) {
         this.id = "CH-" + new SimpleDateFormat("yyyyMMdd-HHmmss").format(new Date());
         this.jugador1 = jugador1;
@@ -84,6 +87,35 @@ public class ChallengePartida implements Serializable {
         return ganador; 
     }
 
+    public boolean isRewardJugador1Claimed() {
+        return rewardJugador1Claimed;
+    }
+
+    public boolean isRewardJugador2Claimed() {
+        return rewardJugador2Claimed;
+    }
+
+    public boolean rewardClaimedPor(String username) {
+        if (username.equals(jugador1)) {
+            return rewardJugador1Claimed;
+        }
+
+        if (username.equals(jugador2)) {
+            return rewardJugador2Claimed;
+        }
+
+        return true;
+    }
+
+    public void marcarRewardClaimed(String username) {
+        if (username.equals(jugador1)) {
+            rewardJugador1Claimed = true;
+        }
+
+        if (username.equals(jugador2)) {
+            rewardJugador2Claimed = true;
+        }
+    }
     public boolean isFinalizado() { 
         return finalizado; 
     }
@@ -123,10 +155,8 @@ public class ChallengePartida implements Serializable {
 
         if (tiempoJugador1 <= tiempoJugador2) {
             ganador = jugador1;
-            scoreJugador1 += 50;
         } else {
             ganador = jugador2;
-            scoreJugador2 += 50;
         }
 
         finalizado = true;
@@ -140,7 +170,7 @@ public class ChallengePartida implements Serializable {
         declinado = true;
         finalizado = true;
         ganador = jugador1;
-        scoreJugador1 = 50;
+        scoreJugador1 = 0;
     }
 
     public void finalizarPorCuentaInactiva(String usernameInactivo) {
@@ -152,12 +182,12 @@ public class ChallengePartida implements Serializable {
             finalizado = true;
             declinado = true;
             ganador = jugador2;
-            scoreJugador2 = 50;
+            scoreJugador2 = 0;
         } else if (usernameInactivo.equals(jugador2)) {
             finalizado = true;
             declinado = true;
             ganador = jugador1;
-            scoreJugador1 = 50;
+            scoreJugador1 = 0;
         }
     }
 }

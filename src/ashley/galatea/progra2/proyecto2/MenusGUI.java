@@ -1061,8 +1061,10 @@ public class MenusGUI extends JFrame {
             }
 
             for (int i = 0; i < seleccionados.size(); i++) {
-                menus.agregarAmigoBidireccional(seleccionados.get(i));
+                menus.enviarSolicitudAmistad(seleccionados.get(i));
             }
+
+            JOptionPane.showMessageDialog(null, "Friend request sent.");
 
             cards.add(friendsHubCard(), CARD_FRIENDS_HUB);
             cardLayout.show(cards, CARD_FRIENDS_HUB);
@@ -2032,21 +2034,43 @@ public class MenusGUI extends JFrame {
         lista.setLayout(new BoxLayout(lista, BoxLayout.Y_AXIS));
         lista.setOpaque(false);
 
-        ArrayList<ChallengePartida> pendientes = menus.obtenerChallengesPendientes();
+        ArrayList<ChallengePartida> challenges = menus.obtenerChallengesPendientes();
+        ArrayList<SolicitudAmistad> solicitudes = menus.obtenerSolicitudesAmistadPendientes();
+        ArrayList<ChallengePartida> rewards = menus.obtenerRewardsChallengePendientes();
 
-        if (pendientes.size() == 0) {
-            JLabel vacio = crearTexto("NO NEW CHALLENGES", Color.WHITE, 14f);
+        int total = challenges.size() + solicitudes.size() + rewards.size();
+
+        int agregados = 0;
+
+        if (total == 0) {
+            JLabel vacio = crearTexto("NO NEW NOTIFICATIONS", Color.WHITE, 14f);
             lista.add(vacio);
         }
 
-        for (int i = 0; i < pendientes.size(); i++) {
-            lista.add(crearItemChallenge(pendientes.get(i)));
+        for (int i = 0; i < challenges.size(); i++) {
+            lista.add(crearItemChallenge(challenges.get(i)));
+            agregados++;
 
-            if (i < pendientes.size() - 1) {
-                JLabel linea = crearTexto("---------------------------------------------", Color.WHITE, 12f);
-                lista.add(Box.createVerticalStrut(12));
-                lista.add(linea);
-                lista.add(Box.createVerticalStrut(12));
+            if (agregados < total) {
+                agregarSeparadorNotificacion(lista);
+            }
+        }
+
+        for (int i = 0; i < rewards.size(); i++) {
+            lista.add(crearItemChallengeReward(rewards.get(i)));
+            agregados++;
+
+            if (agregados < total) {
+                agregarSeparadorNotificacion(lista);
+            }
+        }
+
+        for (int i = 0; i < solicitudes.size(); i++) {
+            lista.add(crearItemFriendRequest(solicitudes.get(i)));
+            agregados++;
+
+            if (agregados < total) {
+                agregarSeparadorNotificacion(lista);
             }
         }
 
@@ -2926,6 +2950,137 @@ public class MenusGUI extends JFrame {
         punto.setVisible(menus.hayNotificacionesPendientes());
 
         return panel;
+    }
+
+    private void agregarSeparadorNotificacion(JPanel lista) {
+        JLabel linea = crearTexto("---------------------------------------------", Color.WHITE, 12f);
+        lista.add(Box.createVerticalStrut(12));
+        lista.add(linea);
+        lista.add(Box.createVerticalStrut(12));
+    }
+
+    private JPanel crearItemFriendRequest(SolicitudAmistad solicitud) {
+        JPanel item = new JPanel(new GridBagLayout());
+        item.setOpaque(false);
+
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.gridx = 0;
+        gbc.anchor = GridBagConstraints.WEST;
+
+        JLabel title = crearTexto("NEW FRIEND REQUEST!", new Color(0xE5B7E6), 13f);
+
+        gbc.gridy = 0;
+        gbc.insets = new Insets(0, 0, 10, 0);
+        item.add(title, gbc);
+
+        JLabel mensaje = new JLabel(
+                "<html><span style='color:#c893c9;'>"
+                + solicitud.getSolicitante().toUpperCase()
+                + "</span><span style='color:white;'> WANTS TO ADD YOU AS A FRIEND!</span></html>"
+        );
+        mensaje.setFont(arcadeFont.deriveFont(Font.PLAIN, 12f));
+
+        gbc.gridy = 1;
+        gbc.insets = new Insets(0, 0, 2, 0);
+        item.add(mensaje, gbc);
+
+        JLabel tiempo = crearTexto(menus.obtenerTiempoSolicitudAgo(solicitud), Color.WHITE, 12f);
+
+        gbc.gridy = 2;
+        gbc.insets = new Insets(0, 0, 14, 0);
+        item.add(tiempo, gbc);
+
+        JButton accept = crearBotonTextoTransparente("[ ACCEPT ]");
+        JButton decline = crearBotonTextoTransparente("[ DECLINE ]");
+
+        accept.addActionListener(e -> {
+            String respuesta = menus.aceptarSolicitudAmistad(solicitud.getId());
+            JOptionPane.showMessageDialog(null, respuesta);
+
+            cards.add(whatsNewCard(), CARD_WHATS_NEW);
+            cardLayout.show(cards, CARD_WHATS_NEW);
+        });
+
+        decline.addActionListener(e -> {
+            String respuesta = menus.declinarSolicitudAmistad(solicitud.getId());
+            JOptionPane.showMessageDialog(null, respuesta);
+
+            cards.add(whatsNewCard(), CARD_WHATS_NEW);
+            cardLayout.show(cards, CARD_WHATS_NEW);
+        });
+
+        JPanel botones = new JPanel(new FlowLayout(FlowLayout.LEFT, 24, 0));
+        botones.setOpaque(false);
+        botones.add(accept);
+        botones.add(decline);
+
+        gbc.gridy = 3;
+        gbc.insets = new Insets(0, 0, 0, 0);
+        item.add(botones, gbc);
+
+        return item;
+    }
+
+    private JPanel crearItemChallengeReward(ChallengePartida challenge) {
+        JPanel item = new JPanel(new GridBagLayout());
+        item.setOpaque(false);
+
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.gridx = 0;
+        gbc.anchor = GridBagConstraints.WEST;
+
+        JLabel title = crearTexto("YOU WON!", new Color(0xE5B7E6), 13f);
+
+        gbc.gridy = 0;
+        gbc.insets = new Insets(0, 0, 10, 0);
+        item.add(title, gbc);
+
+        String rival = challenge.getJugador1();
+
+        if (menus.getUsuarioActual() != null
+                && menus.getUsuarioActual().getUsername().equals(challenge.getJugador1())) {
+            rival = challenge.getJugador2();
+        }
+
+        JLabel mensaje = new JLabel(
+                "<html><span style='color:white;'>YOU WON CHALLENGE AGAINST </span>"
+                + "<span style='color:#c893c9;'>"
+                + rival.toUpperCase()
+                + "</span></html>"
+        );
+        mensaje.setFont(arcadeFont.deriveFont(Font.PLAIN, 12f));
+
+        gbc.gridy = 1;
+        gbc.insets = new Insets(0, 0, 2, 0);
+        item.add(mensaje, gbc);
+
+        JLabel dificultad = new JLabel(
+                "<html><span style='color:white;'>LEVEL: </span>"
+                + "<span style='color:#c893c9;'>"
+                + challenge.getDificultad()
+                + "</span></html>"
+        );
+        dificultad.setFont(arcadeFont.deriveFont(Font.PLAIN, 12f));
+
+        gbc.gridy = 2;
+        gbc.insets = new Insets(0, 0, 14, 0);
+        item.add(dificultad, gbc);
+
+        JButton claim = crearBotonTextoTransparente("[ CLAIM REWARD ]");
+
+        claim.addActionListener(e -> {
+            String respuesta = menus.claimChallengeReward(challenge.getId());
+            JOptionPane.showMessageDialog(null, respuesta);
+
+            cards.add(whatsNewCard(), CARD_WHATS_NEW);
+            cardLayout.show(cards, CARD_WHATS_NEW);
+        });
+
+        gbc.gridy = 3;
+        gbc.insets = new Insets(0, 0, 0, 0);
+        item.add(claim, gbc);
+
+        return item;
     }
 
 }

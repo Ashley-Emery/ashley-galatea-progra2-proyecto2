@@ -30,12 +30,14 @@ public class Menus {
     private String idiomaSeleccionadoTemporal = null;
 
     private final String RUTA_CHALLENGES = "data/challenges/";
+    private final String RUTA_FRIEND_REQUESTS = "data/friend_requests/";
 
     public Menus() {
         File carpeta = new File(RUTA_USUARIOS);
         carpeta.mkdirs();
         new File(RUTA_CHALLENGES).mkdirs();
         usuarioActual = null;
+        new File(RUTA_FRIEND_REQUESTS).mkdirs();
     }
 
     public Usuario getUsuarioActual() {
@@ -688,6 +690,210 @@ public class Menus {
         return resultado;
     }
 
+ //---------------------------------
+
+    private void guardarSolicitudAmistad(SolicitudAmistad solicitud) {
+        try {
+            File carpeta = new File(RUTA_FRIEND_REQUESTS);
+            carpeta.mkdirs();
+
+            ObjectOutputStream out = new ObjectOutputStream(
+                    new FileOutputStream(RUTA_FRIEND_REQUESTS + solicitud.getId() + ".dat")
+            );
+
+            out.writeObject(solicitud);
+            out.close();
+
+        } catch (Exception e) {
+            System.out.println("Error guardando solicitud de amistad: " + e.getMessage());
+        }
+    }
+
+    private SolicitudAmistad cargarSolicitudAmistad(String id) {
+        try {
+            ObjectInputStream in = new ObjectInputStream(
+                    new FileInputStream(RUTA_FRIEND_REQUESTS + id + ".dat")
+            );
+
+            SolicitudAmistad solicitud = (SolicitudAmistad) in.readObject();
+            in.close();
+
+            return solicitud;
+
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    public String enviarSolicitudAmistad(String usernameReceptor) {
+        if (usuarioActual == null) {
+            return "Debe iniciar sesión.";
+        }
+
+        usernameReceptor = limpiarTexto(usernameReceptor);
+
+        if (!usuarioDisponible(usernameReceptor)) {
+            return "El usuario no está disponible.";
+        }
+
+        if (usuarioActual.getUsername().equals(usernameReceptor)) {
+            return "No puede enviarse una solicitud a usted mismo.";
+        }
+
+        if (usuarioActual.getAmigosRivales().contains(usernameReceptor)) {
+            return "Este usuario ya es tu amigo.";
+        }
+
+        if (existeSolicitudPendiente(usuarioActual.getUsername(), usernameReceptor)) {
+            return "Friend request already sent.";
+        }
+
+        SolicitudAmistad solicitud = new SolicitudAmistad(
+                usuarioActual.getUsername(),
+                usernameReceptor
+        );
+
+        guardarSolicitudAmistad(solicitud);
+
+        registrarAccountActivity("User sent friend request to " + usernameReceptor);
+
+        guardarActividad(
+                usernameReceptor,
+                "account_activity.dat",
+                "Friend request received from " + usuarioActual.getUsername()
+        );
+
+        return "Friend request sent.";
+    }
+
+    private boolean existeSolicitudPendiente(String solicitante, String receptor) {
+        File carpeta = new File(RUTA_FRIEND_REQUESTS);
+        File[] archivos = carpeta.listFiles();
+
+        if (archivos == null) {
+            return false;
+        }
+
+        for (int i = 0; i < archivos.length; i++) {
+            if (archivos[i].isFile() && archivos[i].getName().endsWith(".dat")) {
+                String id = archivos[i].getName().replace(".dat", "");
+                SolicitudAmistad solicitud = cargarSolicitudAmistad(id);
+
+                if (solicitud != null
+                        && !solicitud.isFinalizada()
+                        && solicitud.getSolicitante().equals(solicitante)
+                        && solicitud.getReceptor().equals(receptor)) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    public ArrayList<SolicitudAmistad> obtenerSolicitudesAmistadPendientes() {
+        ArrayList<SolicitudAmistad> pendientes = new ArrayList<SolicitudAmistad>();
+
+        if (usuarioActual == null) {
+            return pendientes;
+        }
+
+        File carpeta = new File(RUTA_FRIEND_REQUESTS);
+        File[] archivos = carpeta.listFiles();
+
+        if (archivos == null) {
+            return pendientes;
+        }
+
+        for (int i = 0; i < archivos.length; i++) {
+            if (archivos[i].isFile() && archivos[i].getName().endsWith(".dat")) {
+                String id = archivos[i].getName().replace(".dat", "");
+                SolicitudAmistad solicitud = cargarSolicitudAmistad(id);
+
+                if (solicitud != null
+                        && !solicitud.isFinalizada()
+                        && solicitud.getReceptor().equals(usuarioActual.getUsername())
+                        && usuarioDisponible(solicitud.getSolicitante())) {
+                    pendientes.add(solicitud);
+                }
+            }
+        }
+
+        return pendientes;
+    }
+
+    public String aceptarSolicitudAmistad(String solicitudId) {
+        if (usuarioActual == null) {
+            return "Debe iniciar sesión.";
+        }
+
+        SolicitudAmistad solicitud = cargarSolicitudAmistad(solicitudId);
+
+        if (solicitud == null) {
+            return "No se pudo cargar la solicitud.";
+        }
+
+        if (!solicitud.getReceptor().equals(usuarioActual.getUsername())) {
+            return "Esta solicitud no pertenece al usuario actual.";
+        }
+
+        Usuario solicitante = cargarUsuario(solicitud.getSolicitante());
+
+        if (solicitante == null || !solicitante.isCuentaActiva()) {
+            solicitud.declinar();
+            guardarSolicitudAmistad(solicitud);
+            return "El usuario ya no está disponible.";
+        }
+
+        usuarioActual.agregarAmigoRival(solicitud.getSolicitante());
+        solicitante.agregarAmigoRival(usuarioActual.getUsername());
+
+        guardarUsuario(usuarioActual);
+        guardarUsuario(solicitante);
+
+        solicitud.aceptar();
+        guardarSolicitudAmistad(solicitud);
+
+        registrarAccountActivity("User accepted friend request from " + solicitud.getSolicitante());
+
+        guardarActividad(
+                solicitud.getSolicitante(),
+                "account_activity.dat",
+                usuarioActual.getUsername() + " accepted your friend request"
+        );
+
+        return "Friend request accepted.";
+    }
+
+    public String declinarSolicitudAmistad(String solicitudId) {
+        if (usuarioActual == null) {
+            return "Debe iniciar sesión.";
+        }
+
+        SolicitudAmistad solicitud = cargarSolicitudAmistad(solicitudId);
+
+        if (solicitud == null) {
+            return "No se pudo cargar la solicitud.";
+        }
+
+        if (!solicitud.getReceptor().equals(usuarioActual.getUsername())) {
+            return "Esta solicitud no pertenece al usuario actual.";
+        }
+
+        solicitud.declinar();
+        guardarSolicitudAmistad(solicitud);
+
+        registrarAccountActivity("User declined friend request from " + solicitud.getSolicitante());
+
+        guardarActividad(
+                solicitud.getSolicitante(),
+                "account_activity.dat",
+                usuarioActual.getUsername() + " declined your friend request"
+        );
+
+        return "Friend request declined.";
+    }
+
     // =========================================================
     // ACCOUNT Y GAME ACTIVITY
     // =========================================================
@@ -899,16 +1105,6 @@ public class Menus {
             Usuario jugador1 = cargarUsuario(challenge.getJugador1());
             Usuario jugador2 = cargarUsuario(challenge.getJugador2());
 
-            if (challenge.getGanador().equals(challenge.getJugador1()) && jugador1 != null) {
-                jugador1.sumarPuntuacion(50);
-                guardarUsuario(jugador1);
-            }
-
-            if (challenge.getGanador().equals(challenge.getJugador2()) && jugador2 != null) {
-                jugador2.sumarPuntuacion(50);
-                guardarUsuario(jugador2);
-            }
-
             guardarActividad(challenge.getJugador1(), "game_activity.dat",
                     "Challenge " + challenge.getId() + " completed. Winner: " + challenge.getGanador());
 
@@ -957,8 +1153,6 @@ public class Menus {
                 Usuario usuarioGanador = cargarUsuario(ganador);
 
                 if (usuarioGanador != null && usuarioGanador.isCuentaActiva()) {
-                    usuarioGanador.sumarPuntuacion(50);
-                    usuarioGanador.sumarRetoGanado();
                     guardarUsuario(usuarioGanador);
 
                     guardarActividad(
@@ -971,6 +1165,76 @@ public class Menus {
                 }
             }
         }
+    }
+
+    public ArrayList<ChallengePartida> obtenerRewardsChallengePendientes() {
+        ArrayList<ChallengePartida> pendientes = new ArrayList<ChallengePartida>();
+
+        if (usuarioActual == null) {
+            return pendientes;
+        }
+
+        File carpeta = new File(RUTA_CHALLENGES);
+        File[] archivos = carpeta.listFiles();
+
+        if (archivos == null) {
+            return pendientes;
+        }
+
+        for (int i = 0; i < archivos.length; i++) {
+            if (archivos[i].isFile() && archivos[i].getName().endsWith(".dat")) {
+                String id = archivos[i].getName().replace(".dat", "");
+                ChallengePartida challenge = cargarChallenge(id);
+
+                if (challenge != null
+                        && challenge.isFinalizado()
+                        && challenge.getGanador().equals(usuarioActual.getUsername())
+                        && !challenge.rewardClaimedPor(usuarioActual.getUsername())) {
+                    pendientes.add(challenge);
+                }
+            }
+        }
+
+        return pendientes;
+    }
+
+    public String claimChallengeReward(String challengeId) {
+        if (usuarioActual == null) {
+            return "Debe iniciar sesión.";
+        }
+
+        ChallengePartida challenge = cargarChallenge(challengeId);
+
+        if (challenge == null) {
+            return "No se pudo cargar el challenge.";
+        }
+
+        if (!challenge.isFinalizado()) {
+            return "Challenge is not finished yet.";
+        }
+
+        if (!challenge.getGanador().equals(usuarioActual.getUsername())) {
+            return "This reward does not belong to this user.";
+        }
+
+        if (challenge.rewardClaimedPor(usuarioActual.getUsername())) {
+            return "Reward already claimed.";
+        }
+
+        usuarioActual.sumarPuntuacion(50);
+        usuarioActual.sumarRetoGanado();
+
+        challenge.marcarRewardClaimed(usuarioActual.getUsername());
+
+        guardarUsuario(usuarioActual);
+        guardarChallenge(challenge);
+
+        registrarGameActivity(
+                "User claimed 50 bonus points for winning challenge "
+                + challenge.getId()
+        );
+
+        return "Reward claimed. You won 50 points.";
     }
 
     // =========================================================
@@ -1623,11 +1887,7 @@ public class Menus {
         long minutos = (segundos % 3600) / 60;
         long resto = segundos % 60;
 
-        if (horas > 0) {
-            return String.format("%02d:%02d:%02d", horas, minutos, resto);
-        }
-
-        return String.format("%02d:%02d", minutos, resto);
+        return String.format("%02d:%02d:%02d", horas, minutos, resto);
     }
 
     public ArrayList<String[]> obtenerFriendsRanking() {
@@ -1755,8 +2015,6 @@ public class Menus {
         Usuario retador = cargarUsuario(challenge.getJugador1());
 
         if (retador != null) {
-            retador.sumarPuntuacion(50);
-            retador.sumarRetoGanado();
             guardarUsuario(retador);
         }
 
@@ -1774,19 +2032,42 @@ public class Menus {
     }
 
     public String obtenerTiempoChallengeAgo(ChallengePartida challenge) {
-        if (challenge == null || challenge.getFechaCreacion() == null) {
-            return "recently";
+        if (challenge == null) {
+            return "0 min ago";
         }
 
-        long diferencia = new Date().getTime() - challenge.getFechaCreacion().getTime();
+        return formatearTiempoAgo(challenge.getFechaCreacion());
+    }
+
+    public String obtenerTiempoSolicitudAgo(SolicitudAmistad solicitud) {
+        if (solicitud == null) {
+            return "0 min ago";
+        }
+
+        return formatearTiempoAgo(solicitud.getFechaCreacion());
+    }
+
+    private String formatearTiempoAgo(Date fecha) {
+        if (fecha == null) {
+            return "0 min ago";
+        }
+
+        long diferencia = new Date().getTime() - fecha.getTime();
         long minutos = diferencia / 60000;
 
-        if (minutos < 1) return "just now";
-        if (minutos < 60) return minutos + " min ago";
+        if (minutos < 1) {
+            return "0 min ago";
+        }
+
+        if (minutos < 60) {
+            return minutos + " min ago";
+        }
 
         long horas = minutos / 60;
 
-        if (horas < 24) return horas + "h ago";
+        if (horas < 24) {
+            return horas + "h ago";
+        }
 
         long dias = horas / 24;
         return dias + "d ago";
@@ -1797,7 +2078,9 @@ public class Menus {
     // =========================================================
 
     public boolean hayNotificacionesPendientes() {
-        return obtenerChallengesPendientes().size() > 0;
+        return obtenerChallengesPendientes().size() > 0
+                || obtenerSolicitudesAmistadPendientes().size() > 0
+                || obtenerRewardsChallengePendientes().size() > 0;
     }
 
 }
