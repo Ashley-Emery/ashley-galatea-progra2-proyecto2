@@ -48,6 +48,22 @@ public class Menus {
         return usuarioActual != null;
     }
 
+    private String idiomaMensajes() {
+        if (usuarioActual != null) {
+            return usuarioActual.getIdioma();
+        }
+
+        if (idiomaSeleccionadoTemporal != null) {
+            return idiomaSeleccionadoTemporal;
+        }
+
+        return "English";
+    }
+
+    private String msg(String key) {
+        return Idioma.get(key, idiomaMensajes());
+    }
+
     private Usuario cargarUsuario(String username) {
         try {
             ObjectInputStream in = new ObjectInputStream(
@@ -169,7 +185,7 @@ public class Menus {
 
     public String obtenerStatusPerfil() {
         if (usuarioActual == null) return "N/A";
-        return usuarioActual.isCuentaActiva() ? "ACTIVE" : "DISABLED";
+        return usuarioActual.isCuentaActiva() ? msg("ACTIVE") : msg("DISABLED");
     }
 
     public String obtenerFechaRegistroPerfil() {
@@ -234,11 +250,11 @@ public class Menus {
         username = limpiarTexto(username);
 
         if (username.length() == 0 || password.length() == 0 || nombreCompleto.trim().length() == 0) {
-            return "Debe llenar todos los campos.";
+            return msg("ERROR_FILL_FIELDS");
         }
 
         if (existeUsuario(username)) {
-            return "Ese nombre de usuario ya existe.";
+            return msg("ERROR_USER_EXISTS");
         }
 
         String validacion = validarPassword(password);
@@ -257,30 +273,30 @@ public class Menus {
         guardarUsuario(nuevo);
         guardarActividad(nuevo.getUsername(), "account_activity.dat", "Account created and registered");
 
-        return "Usuario creado correctamente.";
+        return msg("USER_CREATED");
     }
 
     public String login(String username, String password) {
         username = limpiarTexto(username);
 
         if (!existeUsuario(username)) {
-            return "El usuario no existe.";
+            return msg("ERROR_USER_DOES_NOT_EXIST");
         }
 
         Usuario usuario = cargarUsuario(username);
 
         if (usuario == null) {
-            return "No se pudo cargar el usuario.";
+            return msg("ERROR_COULD_NOT_LOAD_USER");
         }
 
         String hashIngresado = generarHash(password);
 
         if (!usuario.getPasswordHash().equals(hashIngresado)) {
-            return "Contraseña incorrecta.";
+            return msg("ERROR_WRONG_PASSWORD");
         }
 
         if (!usuario.isCuentaActiva()) {
-            return "Account disabled. To proceed reactivate your account.";
+            return msg("ACCOUNT_DISABLED_TO_REACTIVATE");
         }
 
         usuario.iniciarSesion();
@@ -290,12 +306,12 @@ public class Menus {
         guardarUsuario(usuarioActual);
         registrarAccountActivity("User logged in");
 
-        return "Welcome";
+        return msg("WELCOME");
     }
 
     public String logout() {
         if (usuarioActual == null) {
-            return "No hay una sesión activa.";
+            return msg("ERROR_NO_ACTIVE_SESSION");
         }
 
         registrarAccountActivity("User logged out");
@@ -304,24 +320,24 @@ public class Menus {
         guardarUsuario(usuarioActual);
         usuarioActual = null;
 
-        return "Sesión cerrada correctamente.";
+        return msg("LOGOUT_SUCCESS");
     }
 
     public String cambiarPassword(String passwordActual, String passwordNueva) {
         if (usuarioActual == null) {
-            return "Debe iniciar sesión.";
+            return msg("ERROR_LOGIN_REQUIRED");
         }
 
         String hashActual = generarHash(passwordActual);
 
         if (!usuarioActual.getPasswordHash().equals(hashActual)) {
-            return "La contraseña actual es incorrecta.";
+            return msg("ERROR_CURRENT_PASSWORD_WRONG");
         }
 
         String hashNueva = generarHash(passwordNueva);
 
         if (usuarioActual.getPasswordHash().equals(hashNueva)) {
-            return "La nueva contraseña no puede ser igual a la contraseña actual.";
+            return msg("ERROR_SAME_PASSWORD");
         }
 
         String validacion = validarPassword(passwordNueva);
@@ -335,28 +351,28 @@ public class Menus {
 
         registrarAccountActivity("User rotated password");
 
-        return "Contraseña cambiada correctamente.";
+        return msg("PASSWORD_CHANGED");
     }
 
     public String validarPassword(String password) {
         if (!passwordTieneMinimoCaracteres(password)) {
-            return "La contraseña debe tener al menos 8 caracteres.";
+            return msg("ERROR_PASSWORD_MIN");
         }
 
         if (!passwordTieneMayuscula(password)) {
-            return "La contraseña debe incluir al menos una letra mayúscula.";
+            return msg("ERROR_PASSWORD_UPPER");
         }
 
         if (!passwordTieneMinuscula(password)) {
-            return "La contraseña debe incluir al menos una letra minúscula.";
+            return msg("ERROR_PASSWORD_LOWER");
         }
 
         if (!passwordTieneNumero(password)) {
-            return "La contraseña debe incluir al menos un número.";
+            return msg("ERROR_PASSWORD_NUMBER");
         }
 
         if (!passwordTieneEspecial(password)) {
-            return "La contraseña debe incluir al menos un carácter especial.";
+            return msg("ERROR_PASSWORD_SPECIAL");
         }
 
         return "OK";
@@ -416,7 +432,7 @@ public class Menus {
 
     public String desactivarCuentaActual() {
         if (usuarioActual == null) {
-            return "Debe iniciar sesión.";
+            return msg("ERROR_LOGIN_REQUIRED");
         }
 
         String username = usuarioActual.getUsername();
@@ -431,26 +447,26 @@ public class Menus {
 
         usuarioActual = null;
 
-        return "Account disabled successfully.";
+        return msg("ACCOUNT_DISABLED_SUCCESS");
     }
 
     public String reactivarCuenta(String username, String password) {
         username = limpiarTexto(username);
 
         if (!existeUsuario(username)) {
-            return "El usuario no existe.";
+            return msg("ERROR_USER_DOES_NOT_EXIST");
         }
 
         Usuario usuario = cargarUsuario(username);
 
         if (usuario == null) {
-            return "No se pudo cargar el usuario.";
+            return msg("ERROR_COULD_NOT_LOAD_USER");
         }
 
         String hashIngresado = generarHash(password);
 
         if (!usuario.getPasswordHash().equals(hashIngresado)) {
-            return "Contraseña incorrecta.";
+            return msg("ERROR_WRONG_PASSWORD");
         }
 
         usuario.setCuentaActiva(true);
@@ -463,7 +479,7 @@ public class Menus {
 
         registrarAccountActivity("User restored account");
 
-        return "Account restored successfully.";
+        return msg("ACCOUNT_RESTORED_SUCCESS");
     }
 
     private void restaurarAmistadesAlReactivar(String usernameReactivado) {
@@ -488,7 +504,7 @@ public class Menus {
 
     public String eliminarCuentaActual() {
         if (usuarioActual == null) {
-            return "Debe iniciar sesión.";
+            return msg("ERROR_LOGIN_REQUIRED");
         }
 
         String usernameEliminado = usuarioActual.getUsername();
@@ -503,10 +519,10 @@ public class Menus {
         boolean eliminado = eliminarCarpetaRecursiva(carpetaUsuario);
 
         if (eliminado) {
-            return "Account deleted successfully.";
+            return msg("ACCOUNT_DELETED_SUCCESS");
         }
 
-        return "No se pudo eliminar la cuenta completamente.";
+        return msg("ERROR_ACCOUNT_DELETE_FAILED");
     }
 
     private void limpiarUsuarioEliminadoDeOtrosUsuarios(String usernameEliminado) {
@@ -549,38 +565,38 @@ public class Menus {
 
     public String agregarAmigoRival(String usernameRival) {
         if (usuarioActual == null) {
-            return "Debe iniciar sesión.";
+            return msg("ERROR_LOGIN_REQUIRED");
         }
 
         usernameRival = limpiarTexto(usernameRival);
 
         if (!existeUsuario(usernameRival)) {
-            return "El usuario rival no existe.";
+            return msg("ERROR_RIVAL_NOT_FOUND");
         }
 
         if (usuarioActual.getUsername().equals(usernameRival)) {
-            return "No puede agregarse a usted mismo.";
+            return msg("ERROR_CANNOT_ADD_SELF");
         }
 
         usuarioActual.agregarAmigoRival(usernameRival);
         guardarUsuario(usuarioActual);
 
-        return "Usuario agregado como amigo/rival.";
+        return msg("FRIEND_ADDED_RIVAL");
     }
 
     public String agregarAmigoBidireccional(String usernameAmigo) {
         if (usuarioActual == null) {
-            return "Debe iniciar sesión.";
+            return msg("ERROR_LOGIN_REQUIRED");
         }
 
         usernameAmigo = limpiarTexto(usernameAmigo);
 
         if (!existeUsuario(usernameAmigo)) {
-            return "El usuario no existe.";
+            return msg("ERROR_USER_DOES_NOT_EXIST");
         }
 
         if (usuarioActual.getUsername().equals(usernameAmigo)) {
-            return "No puede agregarse a usted mismo.";
+            return msg("ERROR_CANNOT_ADD_SELF");
         }
 
         usuarioActual.agregarAmigoRival(usernameAmigo);
@@ -597,7 +613,7 @@ public class Menus {
         guardarActividad(usernameAmigo, "account_activity.dat",
                 "User added by " + usuarioActual.getUsername() + " as friend");
 
-        return "Friend added correctly.";
+        return msg("FRIEND_ADDED");
     }
 
     public ArrayList<String> obtenerAmigosActuales() {
@@ -622,11 +638,11 @@ public class Menus {
 
     public String eliminarAmigos(ArrayList<String> amigos) {
         if (usuarioActual == null) {
-            return "Debe iniciar sesión.";
+            return msg("ERROR_LOGIN_REQUIRED");
         }
 
         if (amigos == null || amigos.size() == 0) {
-            return "Debe seleccionar al menos un amigo.";
+            return msg("SELECT_AT_LEAST_ONE_FRIEND");
         }
 
         for (int i = 0; i < amigos.size(); i++) {
@@ -648,7 +664,7 @@ public class Menus {
 
         guardarUsuario(usuarioActual);
 
-        return "Friend(s) removed correctly.";
+        return msg("FRIENDS_REMOVED");
     }
 
 
@@ -690,8 +706,6 @@ public class Menus {
         return resultado;
     }
 
- //---------------------------------
-
     private void guardarSolicitudAmistad(SolicitudAmistad solicitud) {
         try {
             File carpeta = new File(RUTA_FRIEND_REQUESTS);
@@ -727,25 +741,25 @@ public class Menus {
 
     public String enviarSolicitudAmistad(String usernameReceptor) {
         if (usuarioActual == null) {
-            return "Debe iniciar sesión.";
+            return msg("ERROR_LOGIN_REQUIRED");
         }
 
         usernameReceptor = limpiarTexto(usernameReceptor);
 
         if (!usuarioDisponible(usernameReceptor)) {
-            return "El usuario no está disponible.";
+            return msg("ERROR_USER_NOT_AVAILABLE");
         }
 
         if (usuarioActual.getUsername().equals(usernameReceptor)) {
-            return "No puede enviarse una solicitud a usted mismo.";
+            return msg("ERROR_CANNOT_REQUEST_SELF");
         }
 
         if (usuarioActual.getAmigosRivales().contains(usernameReceptor)) {
-            return "Este usuario ya es tu amigo.";
+            return msg("ERROR_ALREADY_FRIEND");
         }
 
         if (existeSolicitudPendiente(usuarioActual.getUsername(), usernameReceptor)) {
-            return "Friend request already sent.";
+            return msg("FRIEND_REQUEST_ALREADY_SENT");
         }
 
         SolicitudAmistad solicitud = new SolicitudAmistad(
@@ -763,7 +777,7 @@ public class Menus {
                 "Friend request received from " + usuarioActual.getUsername()
         );
 
-        return "Friend request sent.";
+        return msg("FRIEND_REQUEST_SENT");
     }
 
     private boolean existeSolicitudPendiente(String solicitante, String receptor) {
@@ -824,17 +838,17 @@ public class Menus {
 
     public String aceptarSolicitudAmistad(String solicitudId) {
         if (usuarioActual == null) {
-            return "Debe iniciar sesión.";
+            return msg("ERROR_LOGIN_REQUIRED");
         }
 
         SolicitudAmistad solicitud = cargarSolicitudAmistad(solicitudId);
 
         if (solicitud == null) {
-            return "No se pudo cargar la solicitud.";
+            return msg("ERROR_COULD_NOT_LOAD_REQUEST");
         }
 
         if (!solicitud.getReceptor().equals(usuarioActual.getUsername())) {
-            return "Esta solicitud no pertenece al usuario actual.";
+            return msg("ERROR_REQUEST_NOT_CURRENT_USER");
         }
 
         Usuario solicitante = cargarUsuario(solicitud.getSolicitante());
@@ -842,7 +856,7 @@ public class Menus {
         if (solicitante == null || !solicitante.isCuentaActiva()) {
             solicitud.declinar();
             guardarSolicitudAmistad(solicitud);
-            return "El usuario ya no está disponible.";
+            return msg("ERROR_USER_NO_LONGER_AVAILABLE");
         }
 
         usuarioActual.agregarAmigoRival(solicitud.getSolicitante());
@@ -862,22 +876,22 @@ public class Menus {
                 usuarioActual.getUsername() + " accepted your friend request"
         );
 
-        return "Friend request accepted.";
+        return msg("FRIEND_REQUEST_ACCEPTED");
     }
 
     public String declinarSolicitudAmistad(String solicitudId) {
         if (usuarioActual == null) {
-            return "Debe iniciar sesión.";
+            return msg("ERROR_LOGIN_REQUIRED");
         }
 
         SolicitudAmistad solicitud = cargarSolicitudAmistad(solicitudId);
 
         if (solicitud == null) {
-            return "No se pudo cargar la solicitud.";
+            return msg("ERROR_COULD_NOT_LOAD_REQUEST");
         }
 
         if (!solicitud.getReceptor().equals(usuarioActual.getUsername())) {
-            return "Esta solicitud no pertenece al usuario actual.";
+            return msg("ERROR_REQUEST_NOT_CURRENT_USER");
         }
 
         solicitud.declinar();
@@ -891,7 +905,7 @@ public class Menus {
                 usuarioActual.getUsername() + " declined your friend request"
         );
 
-        return "Friend request declined.";
+        return msg("FRIEND_REQUEST_DECLINED");
     }
 
     // =========================================================
@@ -1070,13 +1084,13 @@ public class Menus {
 
     public String registrarResultadoChallenge(String challengeId, int tiempoSegundos) {
         if (usuarioActual == null) {
-            return "Debe iniciar sesión.";
+            return msg("ERROR_LOGIN_REQUIRED");
         }
 
         ChallengePartida challenge = cargarChallenge(challengeId);
 
         if (challenge == null) {
-            return "No se pudo cargar el challenge.";
+            return msg("ERROR_COULD_NOT_LOAD_CHALLENGE");
         }
 
         int scoreBase = calcularPuntajeChallenge(challenge.getDificultad(), false);
@@ -1088,7 +1102,7 @@ public class Menus {
         );
 
         if (!registrado) {
-            return "Este resultado ya fue registrado.";
+            return msg("RESULT_ALREADY_REGISTERED");
         }
 
         usuarioActual.sumarPuntuacion(scoreBase);
@@ -1200,25 +1214,25 @@ public class Menus {
 
     public String claimChallengeReward(String challengeId) {
         if (usuarioActual == null) {
-            return "Debe iniciar sesión.";
+            return msg("ERROR_LOGIN_REQUIRED");
         }
 
         ChallengePartida challenge = cargarChallenge(challengeId);
 
         if (challenge == null) {
-            return "No se pudo cargar el challenge.";
+            return msg("ERROR_COULD_NOT_LOAD_CHALLENGE");
         }
 
         if (!challenge.isFinalizado()) {
-            return "Challenge is not finished yet.";
+            return msg("ERROR_CHALLENGE_NOT_FINISHED");
         }
 
         if (!challenge.getGanador().equals(usuarioActual.getUsername())) {
-            return "This reward does not belong to this user.";
+            return msg("ERROR_REWARD_NOT_USER");
         }
 
         if (challenge.rewardClaimedPor(usuarioActual.getUsername())) {
-            return "Reward already claimed.";
+            return msg("ERROR_REWARD_ALREADY_CLAIMED");
         }
 
         usuarioActual.sumarPuntuacion(50);
@@ -1234,7 +1248,7 @@ public class Menus {
                 + challenge.getId()
         );
 
-        return "Reward claimed. You won 50 points.";
+        return msg("REWARD_CLAIMED");
     }
 
     // =========================================================
@@ -1255,7 +1269,7 @@ public class Menus {
 
     public String seleccionarNivel(int nivel) {
         if (!puedeJugarNivel(nivel)) {
-            return "Nivel bloqueado.";
+            return msg("LEVEL_LOCKED");
         }
 
         return iniciarPuzzle(nivel);
@@ -1290,7 +1304,7 @@ public class Menus {
 
     public String completarPuzzle(int nivel, int puntaje, long tiempoMinutos) {
         if (usuarioActual == null) {
-            return "Debe iniciar sesión.";
+            return msg("ERROR_LOGIN_REQUIRED");
         }
 
         ArrayList<Niveles> puzzles = obtenerPuzzlesUsuario();
@@ -1303,11 +1317,11 @@ public class Menus {
                 registrarGameActivity("User successfully completed level " + nivel);
                 registrarGameActivity("User won " + puntaje + " points completing level " + nivel);
 
-                return "Nivel completado correctamente.";
+                return msg("LEVEL_PROGRESS_SAVED");
             }
         }
 
-        return "Nivel no encontrado.";
+        return msg("LEVEL_NOT_FOUND");
     }
 
     private ArrayList<Niveles> crearPuzzlesIniciales() {
@@ -1362,11 +1376,11 @@ public class Menus {
 
     public String iniciarPuzzle(int nivel) {
         if (usuarioActual == null) {
-            return "Debe iniciar sesión.";
+            return msg("ERROR_LOGIN_REQUIRED");
         }
 
         if (!puedeJugarNivel(nivel)) {
-            return "Nivel bloqueado.";
+            return msg("LEVEL_LOCKED");
         }
 
         ArrayList<Niveles> puzzles = obtenerPuzzlesUsuario();
@@ -1374,27 +1388,27 @@ public class Menus {
         for (int i = 0; i < puzzles.size(); i++) {
             if (puzzles.get(i).getNivel() == nivel) {
                 registrarGameActivity("User started level " + nivel + " - " + puzzles.get(i).getDificultad());
-                return "Nivel iniciado.";
+                return msg("LEVEL_STARTED");
             }
         }
 
-        return "Nivel no encontrado.";
+        return msg("LEVEL_NOT_FOUND");
     }
 
     public String registrarResultadoPartida(boolean gano, int nivel, int puntos, long tiempoJugado, String detalle) {
         if (usuarioActual == null) {
-            return "Debe iniciar sesión.";
+            return msg("ERROR_LOGIN_REQUIRED");
         }
 
         usuarioActual.registrarPartida(gano, nivel, puntos, tiempoJugado, detalle);
         guardarUsuario(usuarioActual);
 
-        return "Estadísticas actualizadas correctamente.";
+        return msg("STATS_UPDATED");
     }
 
     public String guardarProgresoNivel(int nivel, int puntaje, long tiempoMinutos, int tiempoSegundos) {
         if (usuarioActual == null) {
-            return "Debe iniciar sesión.";
+            return msg("ERROR_LOGIN_REQUIRED");
         }
 
         boolean primeraVez = !nivelCompletado(nivel);
@@ -1413,7 +1427,7 @@ public class Menus {
 
             guardarUsuario(usuarioActual);
 
-            return "Nivel completado correctamente.";
+            return msg("LEVEL_PROGRESS_SAVED");
         }
 
         registrarGameActivity("User replayed and completed level " + nivel);
@@ -1428,7 +1442,7 @@ public class Menus {
 
         guardarUsuario(usuarioActual);
 
-        return "Nivel completado nuevamente sin puntos adicionales.";
+        return msg("LEVEL_REPLAY_NO_POINTS");
     }
 
     // =========================================================
@@ -1453,7 +1467,7 @@ public class Menus {
 
     public String cambiarAvatar(String avatar, String colorHex) {
         if (usuarioActual == null) {
-            return "Debe iniciar sesión.";
+            return msg("ERROR_LOGIN_REQUIRED");
         }
 
         usuarioActual.setAvatar(avatar);
@@ -1462,7 +1476,7 @@ public class Menus {
 
         registrarAccountActivity("User changed avatar");
 
-        return "Avatar cambiado correctamente.";
+        return msg("AVATAR_CHANGED");
     }
 
     public ArrayList<String> obtenerAvataresDisponibles() {
@@ -1509,22 +1523,22 @@ public class Menus {
 
     public String guardarAvatarPerfil(String avatar, String colorHex) {
         if (usuarioActual == null) {
-            return "Debe iniciar sesión.";
+            return msg("ERROR_LOGIN_REQUIRED");
         }
 
         if (!obtenerAvataresDisponibles().contains(avatar)) {
-            return "Avatar inválido.";
+            return msg("ERROR_INVALID_AVATAR");
         }
 
         if (!obtenerColoresAvatarDisponibles().contains(colorHex)) {
-            return "Color inválido.";
+            return msg("ERROR_INVALID_COLOR");
         }
 
         boolean cambioAvatar = !usuarioActual.getAvatar().equals(avatar);
         boolean cambioColor = !usuarioActual.getAvatarColorHex().equals(colorHex);
 
         if (!cambioAvatar && !cambioColor) {
-            return "No avatar changes detected.";
+            return msg("NO_AVATAR_CHANGES");
         }
 
         usuarioActual.setAvatar(avatar);
@@ -1533,7 +1547,7 @@ public class Menus {
 
         registrarAccountActivity("User changed avatar");
 
-        return "Avatar saved successfully.";
+        return msg("AVATAR_SAVED");
     }
 
     // =========================================================
@@ -1542,22 +1556,22 @@ public class Menus {
 
     public String actualizarPerfil(String avatar, int volumen, String idioma, String controles) {
         if (usuarioActual == null) {
-            return "Debe iniciar sesión.";
+            return msg("ERROR_LOGIN_REQUIRED");
         }
 
         if (volumen < 0 || volumen > 100) {
-            return "El volumen debe estar entre 0 y 100.";
+            return msg("ERROR_VOLUME_RANGE");
         }
 
         usuarioActual.actualizarPerfil(avatar, volumen, idioma, controles);
         guardarUsuario(usuarioActual);
 
-        return "Perfil actualizado correctamente.";
+        return msg("PROFILE_UPDATED");
     }
 
     public String actualizarConfigAudio(int volumenSFX, int volumenMusica, boolean sfxActivo, boolean musicaActiva, double posicionMusicaSegundos) {
         if (usuarioActual == null) {
-            return "Debe iniciar sesión.";
+            return msg("ERROR_LOGIN_REQUIRED");
         }
 
         usuarioActual.actualizarConfigAudio(
@@ -1570,7 +1584,7 @@ public class Menus {
 
         guardarUsuario(usuarioActual);
 
-        return "Configuración de audio actualizada.";
+        return msg("AUDIO_CONFIG_UPDATED");
     }
 
     public void seleccionarIdiomaTemporal(String idioma) {
@@ -1646,7 +1660,7 @@ public class Menus {
             String dificultadPreferida
     ) {
         if (usuarioActual == null) {
-            return "Debe iniciar sesión.";
+            return msg("ERROR_LOGIN_REQUIRED");
         }
 
         usuarioActual.setIdioma(idioma);
@@ -1663,7 +1677,7 @@ public class Menus {
 
         registrarAccountActivity("User updated settings");
 
-        return "Settings saved successfully.";
+        return msg("SETTINGS_SAVED");
     }
 
     // =========================================================
@@ -1997,17 +2011,17 @@ public class Menus {
 
     public String declinarChallenge(String challengeId) {
         if (usuarioActual == null) {
-            return "Debe iniciar sesión.";
+            return msg("ERROR_LOGIN_REQUIRED");
         }
 
         ChallengePartida challenge = cargarChallenge(challengeId);
 
         if (challenge == null) {
-            return "No se pudo cargar el challenge.";
+            return msg("ERROR_COULD_NOT_LOAD_CHALLENGE");
         }
 
         if (!challenge.getJugador2().equals(usuarioActual.getUsername())) {
-            return "Este challenge no pertenece al usuario actual.";
+            return msg("ERROR_CHALLENGE_NOT_CURRENT_USER");
         }
 
         challenge.declinar(usuarioActual.getUsername());
@@ -2028,7 +2042,7 @@ public class Menus {
                 + " from " + challenge.getJugador1()
         );
 
-        return "Challenge declined.";
+        return msg("CHALLENGE_DECLINED");
     }
 
     public String obtenerTiempoChallengeAgo(ChallengePartida challenge) {

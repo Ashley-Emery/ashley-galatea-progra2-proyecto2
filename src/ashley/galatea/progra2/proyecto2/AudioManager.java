@@ -57,6 +57,11 @@ public class AudioManager {
         }
     }
 
+
+    private String txt(String key) {
+        return Idioma.get(key, menus);
+    }
+
     public void reproducirSFX(String archivo) {
         if (!sfxActivo || volumenSFX <= 0) {
             return;
@@ -106,12 +111,12 @@ public class AudioManager {
     }
 
     public void mostrarControlVolumenSFX(JFrame parent) {
-        JDialog dialogo = crearDialogo(parent, "SFX Volume", "SFX Volume", true);
+        JDialog dialogo = crearDialogo(parent, txt("SFX_VOLUME"), txt("SFX_VOLUME"), true);
         dialogo.setVisible(true);
     }
 
     public void mostrarControlVolumenMusica(JFrame parent) {
-        JDialog dialogo = crearDialogo(parent, "Music Volume", "Music Volume", false);
+        JDialog dialogo = crearDialogo(parent, txt("MUSIC_VOLUME"), txt("MUSIC_VOLUME"), false);
         dialogo.setVisible(true);
     }
 
@@ -135,10 +140,10 @@ public class AudioManager {
         slider.addChangeListener(e -> {
             if (esSFX) {
                 setVolumenSFX(slider.getValue());
-                lblVolumen.setText("SFX Volume: " + volumenSFX + "%");
+                lblVolumen.setText(texto + ": " + volumenSFX + "%");
             } else {
                 setVolumenMusica(slider.getValue());
-                lblVolumen.setText("Music Volume: " + volumenMusica + "%");
+                lblVolumen.setText(texto + ": " + volumenMusica + "%");
             }
         });
 

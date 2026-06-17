@@ -105,6 +105,14 @@ public class MenusGUI extends JFrame {
         timerNotificaciones.start();
     }
 
+    private String txt(String key) {
+        return Idioma.get(key, menus);
+    }
+
+    private String titulo(String key) {
+        return "[ " + txt(key) + " ]";
+    }
+
     private JPanel loadingCard() {
         JPanel panel = new JPanel(new BorderLayout());
         panel.setBackground(Color.BLACK);
@@ -169,15 +177,15 @@ public class MenusGUI extends JFrame {
         gbc.insets = new Insets(0, 0, 55, 0);
         contenido.add(titulo, gbc);
 
-        JLabel subtitulo = crearTexto("LANGUAGE PREFERENCE", new Color(0xD99B18), 15f);
+        JLabel subtitulo = crearTexto(txt("LANGUAGE_PREFERENCE"), new Color(0xD99B18), 15f);
 
         gbc.gridy = 1;
         gbc.insets = new Insets(0, 0, 35, 0);
         contenido.add(subtitulo, gbc);
 
-        JButton english = crearBoton("ENGLISH", new Color(0xC893C9));
-        JButton spanish = crearBoton("SPANISH", new Color(0xC893C9));
-        JButton skip = crearBoton("SKIP", new Color(0xE25B57));
+        JButton english = crearBoton(txt("ENGLISH"), new Color(0xC893C9));
+        JButton spanish = crearBoton(txt("SPANISH"), new Color(0xC893C9));
+        JButton skip = crearBoton(txt("SKIP"), new Color(0xE25B57));
 
         english.addActionListener(e -> {
             menus.seleccionarIdiomaTemporal("English");
@@ -232,9 +240,9 @@ public class MenusGUI extends JFrame {
         gbc.insets = new Insets(0, 0, 70, 0);
         contenido.add(titulo, gbc);
 
-        JButton login = crearBoton("LOG IN", new Color(0xC893C9));
-        JButton signin = crearBoton("SIGN IN", new Color(0xC893C9));
-        JButton exit = crearBoton("EXIT", new Color(0xE25B57));
+        JButton login = crearBoton(txt("LOG_IN"), new Color(0xC893C9));
+        JButton signin = crearBoton(txt("SIGN_IN"), new Color(0xC893C9));
+        JButton exit = crearBoton(txt("EXIT"), new Color(0xE25B57));
 
         login.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
@@ -281,7 +289,7 @@ public class MenusGUI extends JFrame {
         gbc.gridx = 0;
         gbc.fill = GridBagConstraints.NONE;
 
-        JLabel titulo = new JLabel("[ LOG IN ]");
+        JLabel titulo = new JLabel(titulo("LOG_IN"));
         titulo.setForeground(new Color(0xC893C9));
         titulo.setFont(arcadeFont.deriveFont(Font.PLAIN, 32f));
 
@@ -297,10 +305,10 @@ public class MenusGUI extends JFrame {
         fgbc.anchor = GridBagConstraints.WEST;
         fgbc.insets = new Insets(0, 0, 8, 0);
 
-        JLabel userLabel = crearTexto("USER", Color.WHITE, 15f);
+        JLabel userLabel = crearTexto(txt("USER"), Color.WHITE, 15f);
         JTextField userField = crearTextField();
 
-        JLabel passLabel = crearTexto("PASSWORD", Color.WHITE, 15f);
+        JLabel passLabel = crearTexto(txt("PASSWORD"), Color.WHITE, 15f);
         JPasswordField passField = crearPasswordField();
 
         JButton ojo = new JButton("◉");
@@ -350,8 +358,8 @@ public class MenusGUI extends JFrame {
         fgbc.anchor = GridBagConstraints.WEST;
         form.add(passPanel, fgbc);
 
-        JButton btnLogin = crearBoton("LOG IN", new Color(0xC893C9));
-        JButton btnBack = crearBoton("BACK", new Color(0xE25B57));
+        JButton btnLogin = crearBoton(txt("LOG_IN"), new Color(0xC893C9));
+        JButton btnBack = crearBoton(txt("BACK"), new Color(0xE25B57));
 
         JPanel botones = new JPanel(new GridBagLayout());
         botones.setOpaque(false);
@@ -373,7 +381,7 @@ public class MenusGUI extends JFrame {
         fgbc.insets = new Insets(0, 0, 0, 0);
         form.add(botones, fgbc);
 
-        JLabel signup = crearTexto("NOT REGISTERED YET? SIGN UP>", Color.WHITE, 13f);
+        JLabel signup = crearTexto(txt("NOT_REGISTERED_SIGN_UP"), Color.WHITE, 13f);
         signup.setCursor(new Cursor(Cursor.HAND_CURSOR));
 
         signup.addMouseListener(new MouseAdapter() {
@@ -399,16 +407,16 @@ public class MenusGUI extends JFrame {
 
                 String respuesta = menus.login(username, password);
 
-                if (respuesta.equals("Welcome")) {
+                if (respuesta.equals(txt("WELCOME"))) {
                     JOptionPane.showMessageDialog(null, respuesta);
                     cards.add(menuPrincipalCard(), CARD_MENU_PRINCIPAL);
                     cardLayout.show(cards, CARD_MENU_PRINCIPAL);
 
-                } else if (respuesta.equals("Account disabled. To proceed reactivate your account.")) {
+                } else if (respuesta.equals(txt("ACCOUNT_DISABLED_TO_REACTIVATE"))) {
                     int opcion = JOptionPane.showConfirmDialog(
                         null,
-                        "This account is disabled.\nDo you want to reactivate it?",
-                        "Reactivate Account",
+                        txt("ACCOUNT_DISABLED_REACTIVATE"),
+                        txt("REACTIVATE_ACCOUNT"),
                         JOptionPane.YES_NO_OPTION
                     );
 
@@ -416,7 +424,7 @@ public class MenusGUI extends JFrame {
                         String reactivar = menus.reactivarCuenta(username, password);
                         JOptionPane.showMessageDialog(null, reactivar);
 
-                        if (reactivar.equals("Account restored successfully.")) {
+                        if (reactivar.equals(txt("ACCOUNT_RESTORED_SUCCESS"))) {
                             cards.add(menuPrincipalCard(), CARD_MENU_PRINCIPAL);
                             cardLayout.show(cards, CARD_MENU_PRINCIPAL);
                         }
@@ -447,7 +455,7 @@ public class MenusGUI extends JFrame {
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.gridx = 0;
 
-        JLabel titulo = new JLabel("[ SIGN IN ]");
+        JLabel titulo = new JLabel(titulo("SIGN_IN"));
         titulo.setForeground(new Color(0xC893C9));
         titulo.setFont(arcadeFont.deriveFont(Font.PLAIN, 32f));
 
@@ -462,13 +470,13 @@ public class MenusGUI extends JFrame {
         fgbc.gridx = 0;
         fgbc.anchor = GridBagConstraints.WEST;
 
-        JLabel nameLabel = crearTexto("NAME", Color.WHITE, 15f);
+        JLabel nameLabel = crearTexto(txt("NAME"), Color.WHITE, 15f);
         JTextField nameField = crearTextField();
 
-        JLabel userLabel = crearTexto("USER", Color.WHITE, 15f);
+        JLabel userLabel = crearTexto(txt("USER"), Color.WHITE, 15f);
         JTextField userField = crearTextField();
 
-        JLabel passLabel = crearTexto("PASSWORD", Color.WHITE, 15f);
+        JLabel passLabel = crearTexto(txt("PASSWORD"), Color.WHITE, 15f);
         JPasswordField passField = crearPasswordField();
 
         JButton ojo = new JButton("◉");
@@ -526,19 +534,19 @@ public class MenusGUI extends JFrame {
         form.add(passPanel, fgbc);
 
         JLabel check1 = crearTexto("✔", Color.WHITE, 17f);
-        JLabel text1 = crearTexto("CONTENER AL MENOS 8 CARACTERES", new Color(0xFFEAFF), 12f);
+        JLabel text1 = crearTexto(txt("PASSWORD_REQ_1"), new Color(0xFFEAFF), 12f);
 
         JLabel check2 = crearTexto("✔", Color.WHITE, 17f);
-        JLabel text2 = crearTexto("INCLUIR AL MENOS UNA LETRA MAYÚSCULA (A-Z)", new Color(0xFFEAFF), 12f);
+        JLabel text2 = crearTexto(txt("PASSWORD_REQ_2"), new Color(0xFFEAFF), 12f);
 
         JLabel check3 = crearTexto("✔", Color.WHITE, 17f);
-        JLabel text3 = crearTexto("INCLUIR AL MENOS UNA LETRA MINÚSCULA (a-z)", new Color(0xFFEAFF), 12f);
+        JLabel text3 = crearTexto(txt("PASSWORD_REQ_3"), new Color(0xFFEAFF), 12f);
 
         JLabel check4 = crearTexto("✔", Color.WHITE, 17f);
-        JLabel text4 = crearTexto("CONTENER AL MENOS UN NÚMERO (0-9)", new Color(0xFFEAFF), 12f);
+        JLabel text4 = crearTexto(txt("PASSWORD_REQ_4"), new Color(0xFFEAFF), 12f);
 
         JLabel check5 = crearTexto("✔", Color.WHITE, 17f);
-        JLabel text5 = crearTexto("INCLUIR AL MENOS UN CARÁCTER ESPECIAL (!@#$%&)", new Color(0xFFEAFF), 12f);
+        JLabel text5 = crearTexto(txt("PASSWORD_REQ_5"), new Color(0xFFEAFF), 12f);
 
         JPanel reqPanel = new JPanel(new GridBagLayout());
         reqPanel.setOpaque(false);
@@ -565,8 +573,8 @@ public class MenusGUI extends JFrame {
             }
         });
 
-        JButton btnSignIn = crearBoton("SIGN IN", new Color(0xC893C9));
-        JButton btnBack = crearBoton("BACK", new Color(0xE25B57));
+        JButton btnSignIn = crearBoton(txt("SIGN_IN"), new Color(0xC893C9));
+        JButton btnBack = crearBoton(txt("BACK"), new Color(0xE25B57));
 
         JPanel botones = new JPanel(new GridBagLayout());
         botones.setOpaque(false);
@@ -602,7 +610,7 @@ public class MenusGUI extends JFrame {
 
                 String respuesta = menus.crearUsuario(username, password, nombreCompleto);
 
-                if (respuesta.equals("Usuario creado correctamente.")) {
+                if (respuesta.equals(txt("USER_CREATED"))) {
                     JOptionPane.showMessageDialog(null, respuesta);
 
                     if (!menus.idiomaTemporalSeleccionado()) {
@@ -647,7 +655,7 @@ public class MenusGUI extends JFrame {
         }
 
         JLabel welcome = new JLabel(
-            "<html><span style='color:white;'>[ WELCOME BACK, </span>"
+            "<html><span style='color:white;'>[ " + txt("WELCOME_BACK") + ", </span>"
             + "<span style='color:#c893c9;'>" + username + "</span>"
             + "<span style='color:white;'> ]</span></html>"
         );
@@ -658,9 +666,9 @@ public class MenusGUI extends JFrame {
         gbc.insets = new Insets(0, 0, 45, 0);
         derecho.add(welcome, gbc);
 
-        JButton play = crearBoton("PLAY", new Color(0xC893C9));
-        JButton challenge = crearBoton("CHALLENGE", new Color(0xC893C9));
-        JButton activity = crearBoton("MY ACTIVITY", new Color(0xD99B18));
+        JButton play = crearBoton(txt("PLAY"), new Color(0xC893C9));
+        JButton challenge = crearBoton(txt("CHALLENGE"), new Color(0xC893C9));
+        JButton activity = crearBoton(txt("MY_ACTIVITY"), new Color(0xD99B18));
 
         
         play.addActionListener(e -> {
@@ -717,7 +725,7 @@ public class MenusGUI extends JFrame {
         gbc.insets = new Insets(0, 0, 55, 0);
         contenido.add(gridNiveles, gbc);
 
-        JButton back = crearBoton("GO BACK", new Color(0xD99B18));
+        JButton back = crearBoton(txt("GO_BACK"), new Color(0xD99B18));
         back.addActionListener(e -> cardLayout.show(cards, CARD_MENU_PRINCIPAL));
 
         gbc.gridy = 2;
@@ -737,14 +745,14 @@ public class MenusGUI extends JFrame {
         gbc.gridx = 0;
         gbc.anchor = GridBagConstraints.WEST;
 
-        JLabel titulo = crearTexto("[ CHALLENGE ]", new Color(0xC893C9), 28f);
+        JLabel titulo = crearTexto(titulo("CHALLENGE"), new Color(0xC893C9), 28f);
 
         gbc.gridy = 0;
         gbc.anchor = GridBagConstraints.CENTER;
         gbc.insets = new Insets(0, 0, 28, 0);
         derecho.add(titulo, gbc);
 
-        JLabel opponentTitle = crearTexto("CHOOSE AN OPPONENT", new Color(0xC893C9), 16f);
+        JLabel opponentTitle = crearTexto(txt("CHOOSE_OPPONENT"), new Color(0xC893C9), 16f);
 
         gbc.gridy = 1;
         gbc.anchor = GridBagConstraints.WEST;
@@ -772,7 +780,7 @@ public class MenusGUI extends JFrame {
         gbc.insets = new Insets(0, 0, 18, 0);
         derecho.add(scrollOponentes, gbc);
 
-        JLabel difficultyTitle = crearTexto("CHOOSE DIFFICULTY", new Color(0xC893C9), 16f);
+        JLabel difficultyTitle = crearTexto(txt("CHOOSE_DIFFICULTY"), new Color(0xC893C9), 16f);
 
         gbc.gridy = 3;
         gbc.insets = new Insets(0, 0, 8, 0);
@@ -796,14 +804,14 @@ public class MenusGUI extends JFrame {
         gbc.insets = new Insets(0, 0, 25, 0);
         derecho.add(difficultyPanel, gbc);
 
-        JButton cancel = crearBotonBevel("CANCEL");
-        JButton play = crearBotonBevel("PLAY");
+        JButton cancel = crearBotonBevel(txt("CANCEL"));
+        JButton play = crearBotonBevel(txt("PLAY"));
 
         cancel.addActionListener(e -> cardLayout.show(cards, CARD_MENU_PRINCIPAL));
 
         play.addActionListener(e -> {
             if (opponentGroup.getSelection() == null || difficultyGroup.getSelection() == null) {
-                JOptionPane.showMessageDialog(null, "Debe seleccionar un oponente y una dificultad.");
+                JOptionPane.showMessageDialog(null, txt("SELECT_OPPONENT_DIFFICULTY"));
                 return;
             }
 
@@ -813,11 +821,11 @@ public class MenusGUI extends JFrame {
             ChallengePartida challenge = menus.iniciarChallengePartida(rival, dificultad);
 
             if (challenge == null) {
-                JOptionPane.showMessageDialog(null, "Could not start challenge.");
+                JOptionPane.showMessageDialog(null, txt("COULD_NOT_START_CHALLENGE"));
                 return;
             }
 
-            JOptionPane.showMessageDialog(null, "Challenge started.");
+            JOptionPane.showMessageDialog(null, txt("CHALLENGE_STARTED"));
 
             mostrarArcadeGifAntesChallenge(challenge);
         });
@@ -842,9 +850,9 @@ public class MenusGUI extends JFrame {
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.gridx = 0;
 
-        JLabel titulo = crearTexto("[ MY ACTIVITY ]", new Color(0xC893C9), 28f);
+        JLabel titulo = crearTexto(titulo("MY_ACTIVITY"), new Color(0xC893C9), 28f);
 
-        JButton back = new JButton("BACK");
+        JButton back = new JButton(txt("BACK"));
         back.setFont(arcadeFont.deriveFont(Font.PLAIN, 14f));
         back.setBackground(new Color(0xD4D4D4));
         back.setForeground(Color.BLACK);
@@ -862,7 +870,7 @@ public class MenusGUI extends JFrame {
         gbc.insets = new Insets(0, 0, 20, 0);
         derecho.add(top, gbc);
 
-        JLabel accountTitle = crearTexto("ACCOUNT ACTIVITY", Color.WHITE, 13f);
+        JLabel accountTitle = crearTexto(txt("ACCOUNT_ACTIVITY"), Color.WHITE, 13f);
 
         gbc.gridy = 1;
         gbc.anchor = GridBagConstraints.WEST;
@@ -876,7 +884,7 @@ public class MenusGUI extends JFrame {
         gbc.insets = new Insets(0, 0, 25, 0);
         derecho.add(accountScroll, gbc);
 
-        JLabel gameTitle = crearTexto("GAME ACTIVITY", Color.WHITE, 13f);
+        JLabel gameTitle = crearTexto(txt("GAME_ACTIVITY"), Color.WHITE, 13f);
 
         gbc.gridy = 3;
         gbc.insets = new Insets(0, 0, 6, 0);
@@ -904,17 +912,17 @@ public class MenusGUI extends JFrame {
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.gridx = 0;
 
-        JLabel titulo = crearTexto("[ FRIENDS HUB ]", new Color(0xC893C9), 28f);
+        JLabel titulo = crearTexto(titulo("FRIENDS_HUB"), new Color(0xC893C9), 28f);
 
         gbc.gridy = 0;
         gbc.anchor = GridBagConstraints.CENTER;
         gbc.insets = new Insets(0, 0, 28, 0);
         derecho.add(titulo, gbc);
 
-        JButton remove = crearBotonBevel("REMOVE FRIEND(S)");
+        JButton remove = crearBotonBevel(txt("REMOVE_FRIENDS"));
         remove.setPreferredSize(new Dimension(180, 35));
 
-        JButton find = crearBotonBevel("FIND FRIEND(S)");
+        JButton find = crearBotonBevel(txt("FIND_FRIENDS"));
         find.setPreferredSize(new Dimension(160, 35));
 
         JPanel botonesTop = new JPanel(new FlowLayout(FlowLayout.CENTER, 18, 0));
@@ -928,7 +936,7 @@ public class MenusGUI extends JFrame {
 
         ArrayList<String> amigos = menus.obtenerAmigosActuales();
 
-        JLabel subtitulo = crearTexto("FRIENDS (" + amigos.size() + ")", Color.WHITE, 18f);
+        JLabel subtitulo = crearTexto(txt("FRIENDS") + " (" + amigos.size() + ")", Color.WHITE, 18f);
 
         gbc.gridy = 2;
         gbc.anchor = GridBagConstraints.WEST;
@@ -985,7 +993,7 @@ public class MenusGUI extends JFrame {
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.gridx = 0;
 
-        JLabel titulo = crearTexto("[ FIND FRIENDS ]", new Color(0xC893C9), 28f);
+        JLabel titulo = crearTexto(titulo("FIND_FRIENDS"), new Color(0xC893C9), 28f);
 
         gbc.gridy = 0;
         gbc.anchor = GridBagConstraints.CENTER;
@@ -1008,10 +1016,10 @@ public class MenusGUI extends JFrame {
         gbc.insets = new Insets(0, 0, 18, 0);
         derecho.add(searchPanel, gbc);
 
-        JButton add = crearBotonBevel("ADD FRIEND");
+        JButton add = crearBotonBevel(txt("ADD_FRIEND"));
         add.setPreferredSize(new Dimension(130, 35));
 
-        JButton cancel = crearBotonBevel("CANCEL");
+        JButton cancel = crearBotonBevel(txt("CANCEL"));
         cancel.setPreferredSize(new Dimension(95, 35));
 
         JPanel botones = new JPanel(new FlowLayout(FlowLayout.CENTER, 18, 0));
@@ -1056,7 +1064,7 @@ public class MenusGUI extends JFrame {
             }
 
             if (seleccionados.size() == 0) {
-                JOptionPane.showMessageDialog(null, "Debe seleccionar al menos un usuario.");
+                JOptionPane.showMessageDialog(null, txt("SELECT_AT_LEAST_ONE_USER"));
                 return;
             }
 
@@ -1064,7 +1072,7 @@ public class MenusGUI extends JFrame {
                 menus.enviarSolicitudAmistad(seleccionados.get(i));
             }
 
-            JOptionPane.showMessageDialog(null, "Friend request sent.");
+            JOptionPane.showMessageDialog(null, txt("FRIEND_REQUEST_SENT"));
 
             cards.add(friendsHubCard(), CARD_FRIENDS_HUB);
             cardLayout.show(cards, CARD_FRIENDS_HUB);
@@ -1086,19 +1094,19 @@ public class MenusGUI extends JFrame {
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.gridx = 0;
 
-        JLabel titulo = crearTexto("[ MY PROFILE ]", new Color(0xC893C9), 28f);
+        JLabel titulo = crearTexto(titulo("MY_PROFILE"), new Color(0xC893C9), 28f);
 
         gbc.gridy = 0;
         gbc.insets = new Insets(0, 0, 20, 0);
         derecho.add(titulo, gbc);
 
-        JButton disable = crearBotonBevel("DISABLE ACCOUNT");
+        JButton disable = crearBotonBevel(txt("DISABLE_ACCOUNT"));
         disable.setPreferredSize(new Dimension(155, 35));
 
-        JButton delete = crearBotonBevel("DELETE ACCOUNT");
+        JButton delete = crearBotonBevel(txt("DELETE_ACCOUNT"));
         delete.setPreferredSize(new Dimension(145, 35));
 
-        JButton rotate = crearBotonBevel("ROTATE PASSWORD");
+        JButton rotate = crearBotonBevel(txt("ROTATE_PASSWORD"));
         rotate.setPreferredSize(new Dimension(165, 35));
 
         JPanel botonesTop = new JPanel(new FlowLayout(FlowLayout.CENTER, 12, 0));
@@ -1137,7 +1145,7 @@ public class MenusGUI extends JFrame {
         avatarBg.setIcon(new ImageIcon(img));
         avatarBg.setHorizontalAlignment(SwingConstants.CENTER);
 
-        JButton changeAvatar = crearBotonBevel("CHANGE AVATAR");
+        JButton changeAvatar = crearBotonBevel(txt("CHANGE_AVATAR"));
         changeAvatar.setPreferredSize(new Dimension(125, 35));
 
         GridBagConstraints agbc = new GridBagConstraints();
@@ -1156,15 +1164,15 @@ public class MenusGUI extends JFrame {
         JPanel datos = new JPanel(new GridBagLayout());
         datos.setOpaque(false);
 
-        agregarFilaPerfil(datos, "USERNAME:", menus.obtenerUsernamePerfil(), 0);
-        agregarFilaPerfil(datos, "STATUS:", menus.obtenerStatusPerfil(), 1);
-        agregarFilaPerfil(datos, "REGISTERED ON:", menus.obtenerFechaRegistroPerfil(), 2);
-        agregarFilaPerfil(datos, "LAST LOGIN:", menus.obtenerUltimoLoginPerfil(), 3);
-        agregarFilaPerfil(datos, "DIFFICULTY MODE:", menus.obtenerDificultadPreferidaPerfil(), 4);
-        agregarFilaPerfil(datos, "LEVELS COMPLETED:", menus.obtenerNivelesCompletadosPerfil(), 5);
-        agregarFilaPerfil(datos, "CHALLENGES WON:", menus.obtenerRetosGanadosPerfil(), 6);
-        agregarFilaPerfil(datos, "SCORE:", menus.obtenerScorePerfil(), 7);
-        agregarFilaPerfil(datos, "FRIENDS:", menus.obtenerCantidadAmigosPerfil(), 8);
+        agregarFilaPerfil(datos, txt("USERNAME") + ":", menus.obtenerUsernamePerfil(), 0);
+        agregarFilaPerfil(datos, txt("STATUS") + ":", menus.obtenerStatusPerfil(), 1);
+        agregarFilaPerfil(datos, txt("REGISTERED_ON") + ":", menus.obtenerFechaRegistroPerfil(), 2);
+        agregarFilaPerfil(datos, txt("LAST_LOGIN") + ":", menus.obtenerUltimoLoginPerfil(), 3);
+        agregarFilaPerfil(datos, txt("DIFFICULTY_MODE") + ":", menus.obtenerDificultadPreferidaPerfil(), 4);
+        agregarFilaPerfil(datos, txt("LEVELS_COMPLETED") + ":", menus.obtenerNivelesCompletadosPerfil(), 5);
+        agregarFilaPerfil(datos, txt("CHALLENGES_WON") + ":", menus.obtenerRetosGanadosPerfil(), 6);
+        agregarFilaPerfil(datos, txt("SCORE") + ":", menus.obtenerScorePerfil(), 7);
+        agregarFilaPerfil(datos, txt("FRIENDS") + ":", menus.obtenerCantidadAmigosPerfil(), 8);
 
         pgbc.gridx = 1;
         pgbc.insets = new Insets(0, 0, 0, 0);
@@ -1207,7 +1215,7 @@ public class MenusGUI extends JFrame {
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.gridx = 0;
 
-        JLabel titulo = crearTexto("[ DISABLE ACCOUNT ]", new Color(0xC893C9), 28f);
+        JLabel titulo = crearTexto(titulo("DISABLE_ACCOUNT"), new Color(0xC893C9), 28f);
 
         gbc.gridy = 0;
         gbc.insets = new Insets(0, 0, 55, 0);
@@ -1215,10 +1223,7 @@ public class MenusGUI extends JFrame {
 
         JLabel texto = crearTexto(
             "<html><div style='text-align:left;'>"
-            + "BY DISABLING YOUR ACCOUNT, YOU WILL NOT<br>"
-            + "BE ABLE TO LOG IN OR ACCESS YOUR DATA<br>"
-            + "UNTIL YOU REACTIVATE IT AGAIN.<br><br><br>"
-            + "DO YOU WANT TO CONTINUE?"
+            + txt("DISABLE_ACCOUNT_TEXT")
             + "</div></html>",
             Color.WHITE,
             14f
@@ -1229,14 +1234,14 @@ public class MenusGUI extends JFrame {
         gbc.insets = new Insets(0, 0, 35, 0);
         derecho.add(texto, gbc);
 
-        JCheckBox confirmar = crearCheckBox("I UNDERSTAND AND CONFIRM THIS ACTION");
+        JCheckBox confirmar = crearCheckBox(txt("CONFIRM_ACTION"));
         confirmar.setForeground(new Color(0xC893C9));
 
         gbc.gridy = 2;
         gbc.insets = new Insets(0, 20, 25, 0);
         derecho.add(confirmar, gbc);
 
-        JButton btnDisable = crearBotonBevel("DISABLE ACCOUNT");
+        JButton btnDisable = crearBotonBevel(txt("DISABLE_ACCOUNT"));
         btnDisable.setPreferredSize(new Dimension(170, 35));
         btnDisable.setEnabled(false);
 
@@ -1267,7 +1272,7 @@ public class MenusGUI extends JFrame {
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.gridx = 0;
 
-        JLabel titulo = crearTexto("[ DELETE ACCOUNT ]", new Color(0xC893C9), 28f);
+        JLabel titulo = crearTexto(titulo("DELETE_ACCOUNT"), new Color(0xC893C9), 28f);
 
         gbc.gridy = 0;
         gbc.insets = new Insets(0, 0, 45, 0);
@@ -1275,12 +1280,7 @@ public class MenusGUI extends JFrame {
 
         JLabel texto = crearTexto(
             "<html><div style='text-align:left;'>"
-            + "THIS ACTION IS PERMANENT. YOUR ACCOUNT<br>"
-            + "AND ALL YOUR DATA WILL BE DELETED AND<br>"
-            + "CANNOT BE RECOVERED.<br><br>"
-            + "DELETING YOUR ACCOUNT WILL ERASE ALL<br>"
-            + "YOUR PROGRESS PERMANENTLY.<br><br>"
-            + "DO YOU WANT TO CONTINUE?"
+            + txt("DELETE_ACCOUNT_TEXT")
             + "</div></html>",
             Color.WHITE,
             14f
@@ -1291,14 +1291,14 @@ public class MenusGUI extends JFrame {
         gbc.insets = new Insets(0, 0, 35, 0);
         derecho.add(texto, gbc);
 
-        JCheckBox confirmar = crearCheckBox("I UNDERSTAND AND CONFIRM THIS ACTION");
+        JCheckBox confirmar = crearCheckBox(txt("CONFIRM_ACTION"));
         confirmar.setForeground(new Color(0xC893C9));
 
         gbc.gridy = 2;
         gbc.insets = new Insets(0, 20, 25, 0);
         derecho.add(confirmar, gbc);
 
-        JButton btnDelete = crearBotonBevel("DELETE ACCOUNT");
+        JButton btnDelete = crearBotonBevel(txt("DELETE_ACCOUNT"));
         btnDelete.setPreferredSize(new Dimension(170, 35));
         btnDelete.setEnabled(false);
 
@@ -1310,7 +1310,7 @@ public class MenusGUI extends JFrame {
             String respuesta = menus.eliminarCuentaActual();
             JOptionPane.showMessageDialog(null, respuesta);
 
-            if (respuesta.equals("Account deleted successfully.")) {
+            if (respuesta.equals(txt("ACCOUNT_DELETED_SUCCESS"))) {
                 limpiarCardsAutenticacion();
                 cardLayout.show(cards, CARD_MENU_INICIO);
             }
@@ -1331,7 +1331,7 @@ public class MenusGUI extends JFrame {
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.gridx = 0;
 
-        JLabel titulo = crearTexto("[ ROTATE PASSWORD ]", new Color(0xC893C9), 28f);
+        JLabel titulo = crearTexto(titulo("ROTATE_PASSWORD"), new Color(0xC893C9), 28f);
 
         gbc.gridy = 0;
         gbc.insets = new Insets(0, 0, 40, 0);
@@ -1344,10 +1344,10 @@ public class MenusGUI extends JFrame {
         fgbc.gridx = 0;
         fgbc.anchor = GridBagConstraints.WEST;
 
-        JLabel currentLabel = crearTexto("CURRENT PASSWORD", Color.WHITE, 15f);
+        JLabel currentLabel = crearTexto(txt("CURRENT_PASSWORD"), Color.WHITE, 15f);
         JPasswordField currentField = crearPasswordField();
 
-        JLabel newLabel = crearTexto("NEW PASSWORD", Color.WHITE, 15f);
+        JLabel newLabel = crearTexto(txt("NEW_PASSWORD"), Color.WHITE, 15f);
         JPasswordField newField = crearPasswordField();
 
         JButton ojo = new JButton("◉");
@@ -1396,19 +1396,19 @@ public class MenusGUI extends JFrame {
         form.add(newPassPanel, fgbc);
 
         JLabel check1 = crearTexto("✔", Color.WHITE, 17f);
-        JLabel text1 = crearTexto("CONTENER AL MENOS 8 CARACTERES", new Color(0xFFEAFF), 12f);
+        JLabel text1 = crearTexto(txt("PASSWORD_REQ_1"), new Color(0xFFEAFF), 12f);
 
         JLabel check2 = crearTexto("✔", Color.WHITE, 17f);
-        JLabel text2 = crearTexto("INCLUIR AL MENOS UNA LETRA MAYÚSCULA (A-Z)", new Color(0xFFEAFF), 12f);
+        JLabel text2 = crearTexto(txt("PASSWORD_REQ_2"), new Color(0xFFEAFF), 12f);
 
         JLabel check3 = crearTexto("✔", Color.WHITE, 17f);
-        JLabel text3 = crearTexto("INCLUIR AL MENOS UNA LETRA MINÚSCULA (a-z)", new Color(0xFFEAFF), 12f);
+        JLabel text3 = crearTexto(txt("PASSWORD_REQ_3"), new Color(0xFFEAFF), 12f);
 
         JLabel check4 = crearTexto("✔", Color.WHITE, 17f);
-        JLabel text4 = crearTexto("CONTENER AL MENOS UN NÚMERO (0-9)", new Color(0xFFEAFF), 12f);
+        JLabel text4 = crearTexto(txt("PASSWORD_REQ_4"), new Color(0xFFEAFF), 12f);
 
         JLabel check5 = crearTexto("✔", Color.WHITE, 17f);
-        JLabel text5 = crearTexto("INCLUIR AL MENOS UN CARÁCTER ESPECIAL (!@#$%&)", new Color(0xFFEAFF), 12f);
+        JLabel text5 = crearTexto(txt("PASSWORD_REQ_5"), new Color(0xFFEAFF), 12f);
 
         JPanel reqPanel = new JPanel(new GridBagLayout());
         reqPanel.setOpaque(false);
@@ -1435,7 +1435,7 @@ public class MenusGUI extends JFrame {
             }
         });
 
-        JButton btnRotate = crearBotonBevel("ROTATE PASSWORD");
+        JButton btnRotate = crearBotonBevel(txt("ROTATE_PASSWORD"));
         btnRotate.setPreferredSize(new Dimension(180, 35));
 
         btnRotate.addActionListener(e -> {
@@ -1445,7 +1445,7 @@ public class MenusGUI extends JFrame {
             String respuesta = menus.cambiarPassword(actual, nueva);
             JOptionPane.showMessageDialog(null, respuesta);
 
-            if (respuesta.equals("Password rotated successfully.")) {
+            if (respuesta.equals(txt("PASSWORD_CHANGED"))) {
                 cards.add(myProfileCard(), CARD_MY_PROFILE);
                 cardLayout.show(cards, CARD_MY_PROFILE);
             }
@@ -1470,7 +1470,7 @@ public class MenusGUI extends JFrame {
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.gridx = 0;
 
-        JLabel titulo = crearTexto("[ MY AVATAR ]", new Color(0xC893C9), 28f);
+        JLabel titulo = crearTexto(titulo("MY_AVATAR"), new Color(0xC893C9), 28f);
 
         gbc.gridy = 0;
         gbc.insets = new Insets(0, 0, 28, 0);
@@ -1573,8 +1573,8 @@ public class MenusGUI extends JFrame {
         JPanel botones = new JPanel(new FlowLayout(FlowLayout.CENTER, 18, 0));
         botones.setOpaque(false);
 
-        JButton cancel = crearBotonBevel("CANCEL");
-        JButton save = crearBotonBevel("SAVE");
+        JButton cancel = crearBotonBevel(txt("CANCEL"));
+        JButton save = crearBotonBevel(txt("SAVE"));
 
         cancel.setPreferredSize(new Dimension(95, 35));
         save.setPreferredSize(new Dimension(85, 35));
@@ -1588,7 +1588,7 @@ public class MenusGUI extends JFrame {
             String respuesta = menus.guardarAvatarPerfil(avatarSeleccionado[0], colorSeleccionado[0]);
             JOptionPane.showMessageDialog(null, respuesta);
 
-            if (respuesta.equals("Avatar saved successfully.") || respuesta.equals("No avatar changes detected.")) {
+            if (respuesta.equals(txt("AVATAR_SAVED")) || respuesta.equals(txt("NO_AVATAR_CHANGES"))) {
                 cards.add(myProfileCard(), CARD_MY_PROFILE);
                 cardLayout.show(cards, CARD_MY_PROFILE);
             }
@@ -1665,10 +1665,8 @@ public class MenusGUI extends JFrame {
 
         JLabel mensaje = new JLabel(
             "<html><div style='text-align:center;'>"
-            + "CHALLENGE STARTED<br><br>"
-            + "The arcade won't repair itself.<br>"
-            + "Time to prove your skills.<br><br>"
-            + "Hope your rival knows how to handle loose wires."
+            + txt("CHALLENGE_STARTED_TITLE") + "<br><br>"
+            + txt("CHALLENGE_STARTED_TEXT")
             + "</div></html>"
         );
 
@@ -1688,7 +1686,7 @@ public class MenusGUI extends JFrame {
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.gridx = 0;
 
-        JLabel titulo = crearTexto("[ MY STATS ]", new Color(0xC893C9), 28f);
+        JLabel titulo = crearTexto(titulo("MY_STATS"), new Color(0xC893C9), 28f);
 
         gbc.gridy = 0;
         gbc.insets = new Insets(0, 0, 25, 0);
@@ -1697,18 +1695,18 @@ public class MenusGUI extends JFrame {
         JPanel statsPanel = new JPanel(new GridLayout(2, 3, 16, 18));
         statsPanel.setOpaque(false);
 
-        statsPanel.add(crearCajaStat("GAMES PLAYED", menus.obtenerGamesPlayedStats()));
-        statsPanel.add(crearCajaStat("LEVELS COMPLETED", menus.obtenerLevelsCompletedStats()));
-        statsPanel.add(crearCajaStat("AVG. TIME PER LEVEL", menus.obtenerAvgTimePerLevelStats()));
-        statsPanel.add(crearCajaStat("CHALLENGES WON", menus.obtenerChallengesWonStats()));
-        statsPanel.add(crearCajaStat("SCORE", menus.obtenerScoreStats()));
-        statsPanel.add(crearCajaStat("RANKING", menus.obtenerRankingStats()));
+        statsPanel.add(crearCajaStat(txt("GAMES_PLAYED"), menus.obtenerGamesPlayedStats()));
+        statsPanel.add(crearCajaStat(txt("LEVELS_COMPLETED"), menus.obtenerLevelsCompletedStats()));
+        statsPanel.add(crearCajaStat(txt("AVG_TIME_PER_LEVEL"), menus.obtenerAvgTimePerLevelStats()));
+        statsPanel.add(crearCajaStat(txt("CHALLENGES_WON"), menus.obtenerChallengesWonStats()));
+        statsPanel.add(crearCajaStat(txt("SCORE"), menus.obtenerScoreStats()));
+        statsPanel.add(crearCajaStat(txt("RANKING"), menus.obtenerRankingStats()));
 
         gbc.gridy = 1;
         gbc.insets = new Insets(0, 0, 24, 0);
         derecho.add(statsPanel, gbc);
 
-        JLabel rankingTitle = crearTexto("[ PERFORMANCE RANKINGS ]", new Color(0xFFEAFF), 15f);
+        JLabel rankingTitle = crearTexto(titulo("PERFORMANCE_RANKINGS"), new Color(0xFFEAFF), 15f);
 
         gbc.gridy = 2;
         gbc.insets = new Insets(0, 0, 14, 0);
@@ -1717,7 +1715,7 @@ public class MenusGUI extends JFrame {
         JPanel botonesRanking = new JPanel(new GridLayout(1, 2, 22, 0));
         botonesRanking.setOpaque(false);
 
-        JButton general = crearBotonBevel("GENERAL RANKING");
+        JButton general = crearBotonBevel(txt("GENERAL_RANKING"));
         general.setPreferredSize(new Dimension(150, 35));
 
         general.addActionListener(e -> {
@@ -1725,7 +1723,7 @@ public class MenusGUI extends JFrame {
             cardLayout.show(cards, CARD_GENERAL_RANKING);
         });
 
-        JButton friends = crearBotonBevel("FRIENDS RANKING");
+        JButton friends = crearBotonBevel(txt("FRIENDS_RANKING"));
         friends.setPreferredSize(new Dimension(150, 35));
 
         friends.addActionListener(e -> {
@@ -1740,7 +1738,7 @@ public class MenusGUI extends JFrame {
         gbc.insets = new Insets(0, 0, 24, 0);
         derecho.add(botonesRanking, gbc);
 
-        JLabel compareTitle = crearTexto("[ COMPARE WITH PLAYER ]", new Color(0xFFEAFF), 15f);
+        JLabel compareTitle = crearTexto(titulo("COMPARE_WITH_PLAYER"), new Color(0xFFEAFF), 15f);
 
         gbc.gridy = 4;
         gbc.insets = new Insets(0, 0, 12, 0);
@@ -1788,7 +1786,7 @@ public class MenusGUI extends JFrame {
             listaPanel.repaint();
         });
 
-        JButton compare = crearBotonBevel("COMPARE STATS");
+        JButton compare = crearBotonBevel(txt("COMPARE_STATS"));
         compare.setPreferredSize(new Dimension(140, 35));
 
         compare.addActionListener(e -> {
@@ -1801,7 +1799,7 @@ public class MenusGUI extends JFrame {
             }
 
             if (usernameSeleccionado.length() == 0) {
-                JOptionPane.showMessageDialog(null, "Debe seleccionar un jugador.");
+                JOptionPane.showMessageDialog(null, txt("SELECT_PLAYER"));
                 return;
             }
 
@@ -1823,13 +1821,13 @@ public class MenusGUI extends JFrame {
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.gridx = 0;
 
-        JLabel titulo = crearTexto("[ GENERAL RANKING ]", new Color(0xC893C9), 28f);
+        JLabel titulo = crearTexto(titulo("GENERAL_RANKING"), new Color(0xC893C9), 28f);
 
         gbc.gridy = 0;
         gbc.insets = new Insets(0, 0, 30, 0);
         derecho.add(titulo, gbc);
 
-        String[] columnas = {"#", "PLAYER", "SCORE", "LEVELS", "AVG TIME", "HOURS PLAYED"};
+        String[] columnas = {"#", txt("PLAYER"), txt("SCORE"), txt("LEVELS"), txt("AVG_TIME"), txt("HOURS_PLAYED")};
 
         ArrayList<String[]> ranking = menus.obtenerGeneralRanking();
         String[][] datos = new String[ranking.size()][6];
@@ -1890,13 +1888,13 @@ public class MenusGUI extends JFrame {
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.gridx = 0;
 
-        JLabel titulo = crearTexto("[ FRIENDS RANKING ]", new Color(0xC893C9), 28f);
+        JLabel titulo = crearTexto(titulo("FRIENDS_RANKING"), new Color(0xC893C9), 28f);
 
         gbc.gridy = 0;
         gbc.insets = new Insets(0, 0, 30, 0);
         derecho.add(titulo, gbc);
 
-        String[] columnas = {"#", "PLAYER", "SCORE", "LEVELS", "AVG TIME", "HOURS PLAYED"};
+        String[] columnas = {"#", txt("PLAYER"), txt("SCORE"), txt("LEVELS"), txt("AVG_TIME"), txt("HOURS_PLAYED")};
 
         ArrayList<String[]> ranking = menus.obtenerFriendsRanking();
         String[][] datos = new String[ranking.size()][6];
@@ -1957,13 +1955,13 @@ public class MenusGUI extends JFrame {
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.gridx = 0;
 
-        JLabel titulo = crearTexto("[ COMPARE STATS ]", new Color(0xC893C9), 28f);
+        JLabel titulo = crearTexto(titulo("COMPARE_STATS"), new Color(0xC893C9), 28f);
 
         gbc.gridy = 0;
         gbc.insets = new Insets(0, 0, 30, 0);
         derecho.add(titulo, gbc);
 
-        String[] columnas = {"#", "PLAYER", "SCORE", "LEVELS", "AVG TIME", "HOURS PLAYED"};
+        String[] columnas = {"#", txt("PLAYER"), txt("SCORE"), txt("LEVELS"), txt("AVG_TIME"), txt("HOURS_PLAYED")};
 
         ArrayList<String[]> ranking = menus.obtenerCompareStats(usernameComparar);
         String[][] datos = new String[ranking.size()][6];
@@ -2024,7 +2022,7 @@ public class MenusGUI extends JFrame {
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.gridx = 0;
 
-        JLabel titulo = crearTexto("[ WHAT'S NEW ]", new Color(0xC893C9), 28f);
+        JLabel titulo = crearTexto(titulo("WHATS_NEW"), new Color(0xC893C9), 28f);
 
         gbc.gridy = 0;
         gbc.insets = new Insets(0, 0, 25, 0);
@@ -2043,7 +2041,7 @@ public class MenusGUI extends JFrame {
         int agregados = 0;
 
         if (total == 0) {
-            JLabel vacio = crearTexto("NO NEW NOTIFICATIONS", Color.WHITE, 14f);
+            JLabel vacio = crearTexto(txt("NO_NEW_NOTIFICATIONS"), Color.WHITE, 14f);
             lista.add(vacio);
         }
 
@@ -2091,7 +2089,7 @@ public class MenusGUI extends JFrame {
         gbc.gridx = 0;
         gbc.anchor = GridBagConstraints.WEST;
 
-        JLabel titulo = crearTexto("[ SETTINGS ]", new Color(0xC893C9), 28f);
+        JLabel titulo = crearTexto(titulo("SETTINGS"), new Color(0xC893C9), 28f);
 
         gbc.gridy = 0;
         gbc.anchor = GridBagConstraints.CENTER;
@@ -2105,10 +2103,10 @@ public class MenusGUI extends JFrame {
         fgbc.gridx = 0;
         fgbc.anchor = GridBagConstraints.WEST;
 
-        JLabel languageTitle = crearTexto("LANGUAGE", new Color(0xE5B7E6), 13f);
+        JLabel languageTitle = crearTexto(txt("LANGUAGE"), new Color(0xE5B7E6), 13f);
 
-        JCheckBox english = crearCheckBox("ENGLISH");
-        JCheckBox spanish = crearCheckBox("SPANISH");
+        JCheckBox english = crearCheckBox(txt("ENGLISH"));
+        JCheckBox spanish = crearCheckBox(txt("SPANISH"));
 
         ButtonGroup idiomaGroup = new ButtonGroup();
         idiomaGroup.add(english);
@@ -2133,10 +2131,10 @@ public class MenusGUI extends JFrame {
         fgbc.insets = new Insets(0, 0, 18, 0);
         form.add(spanish, fgbc);
 
-        JLabel audioTitle = crearTexto("AUDIO", new Color(0xE5B7E6), 13f);
+        JLabel audioTitle = crearTexto(txt("AUDIO"), new Color(0xE5B7E6), 13f);
 
-        JCheckBox enableMusic = crearCheckBox("ENABLE MUSIC");
-        JCheckBox enableSfx = crearCheckBox("ENABLE SOUND EFFECTS");
+        JCheckBox enableMusic = crearCheckBox(txt("ENABLE_MUSIC"));
+        JCheckBox enableSfx = crearCheckBox(txt("ENABLE_SOUND_EFFECTS"));
 
         enableMusic.setSelected(menus.musicaActivaSettings());
         enableSfx.setSelected(menus.sfxActivoSettings());
@@ -2152,7 +2150,7 @@ public class MenusGUI extends JFrame {
         fgbc.insets = new Insets(0, 0, 18, 0);
         form.add(enableSfx, fgbc);
 
-        JLabel musicTitle = crearTexto("MUSIC VOLUME", new Color(0xE5B7E6), 13f);
+        JLabel musicTitle = crearTexto(txt("MUSIC_VOLUME"), new Color(0xE5B7E6), 13f);
         JSlider musicSlider = crearSliderSettings(menus.obtenerVolumenMusicaSettings());
 
         fgbc.gridy = 6;
@@ -2163,7 +2161,7 @@ public class MenusGUI extends JFrame {
         fgbc.insets = new Insets(0, 0, 18, 0);
         form.add(musicSlider, fgbc);
 
-        JLabel sfxTitle = crearTexto("SFX VOLUME", new Color(0xE5B7E6), 13f);
+        JLabel sfxTitle = crearTexto(txt("SFX_VOLUME"), new Color(0xE5B7E6), 13f);
         JSlider sfxSlider = crearSliderSettings(menus.obtenerVolumenSFXSettings());
 
         fgbc.gridy = 8;
@@ -2174,7 +2172,7 @@ public class MenusGUI extends JFrame {
         fgbc.insets = new Insets(0, 0, 18, 0);
         form.add(sfxSlider, fgbc);
 
-        JLabel difficultyTitle = crearTexto("DEFAULT DIFFICULTY", new Color(0xE5B7E6), 13f);
+        JLabel difficultyTitle = crearTexto(txt("DEFAULT_DIFFICULTY"), new Color(0xE5B7E6), 13f);
 
         String[] dificultades = {
             "NEON CIRCUIT",
@@ -2213,8 +2211,8 @@ public class MenusGUI extends JFrame {
         JPanel botones = new JPanel(new FlowLayout(FlowLayout.CENTER, 24, 0));
         botones.setOpaque(false);
 
-        JButton cancel = crearBotonBevel("CANCEL");
-        JButton save = crearBotonBevel("SAVE");
+        JButton cancel = crearBotonBevel(txt("CANCEL"));
+        JButton save = crearBotonBevel(txt("SAVE"));
 
         cancel.setPreferredSize(new Dimension(105, 40));
         save.setPreferredSize(new Dimension(90, 40));
@@ -2243,6 +2241,7 @@ public class MenusGUI extends JFrame {
 
             JOptionPane.showMessageDialog(null, respuesta);
 
+            cards.add(menuPrincipalCard(), CARD_MENU_PRINCIPAL);
             cards.add(settingsCard(), CARD_SETTINGS);
             cardLayout.show(cards, CARD_SETTINGS);
         });
@@ -2278,7 +2277,7 @@ public class MenusGUI extends JFrame {
         gbc.gridx = 0;
         gbc.anchor = GridBagConstraints.WEST;
 
-        JLabel title = crearTexto("NEW CHALLENGE!", new Color(0xE5B7E6), 13f);
+        JLabel title = crearTexto(txt("NEW_CHALLENGE"), new Color(0xE5B7E6), 13f);
 
         gbc.gridy = 0;
         gbc.insets = new Insets(0, 0, 10, 0);
@@ -2287,7 +2286,7 @@ public class MenusGUI extends JFrame {
         JLabel retador = new JLabel(
                 "<html><span style='color:#c893c9;'>"
                 + challenge.getJugador1().toUpperCase()
-                + "</span><span style='color:white;'> CHALLENGED YOU!</span></html>"
+                + "</span><span style='color:white;'> " + txt("CHALLENGED_YOU") + "</span></html>"
         );
         retador.setFont(arcadeFont.deriveFont(Font.PLAIN, 12f));
 
@@ -2296,7 +2295,7 @@ public class MenusGUI extends JFrame {
         item.add(retador, gbc);
 
         JLabel dificultad = new JLabel(
-                "<html><span style='color:white;'>LEVEL: </span>"
+                "<html><span style='color:white;'>" + txt("LEVEL") + ": </span>"
                 + "<span style='color:#c893c9;'>"
                 + challenge.getDificultad()
                 + "</span></html>"
@@ -2312,11 +2311,11 @@ public class MenusGUI extends JFrame {
         gbc.insets = new Insets(0, 0, 14, 0);
         item.add(tiempo, gbc);
 
-        JButton accept = crearBotonTextoTransparente("[ ACCEPT ]");
-        JButton decline = crearBotonTextoTransparente("[ DECLINE ]");
+        JButton accept = crearBotonTextoTransparente("[ " + txt("ACCEPT") + " ]");
+        JButton decline = crearBotonTextoTransparente("[ " + txt("DECLINE") + " ]");
 
         accept.addActionListener(e -> {
-            JOptionPane.showMessageDialog(null, "Challenge accepted.");
+            JOptionPane.showMessageDialog(null, txt("CHALLENGE_ACCEPTED"));
             mostrarArcadeGifAntesChallenge(challenge);
         });
 
@@ -2341,7 +2340,7 @@ public class MenusGUI extends JFrame {
     }
 
     private JTable crearTablaActividad(ArrayList<Actividad> actividades) {
-        String[] columnas = {"Time", "Log"};
+        String[] columnas = {txt("DATE"), txt("LOG")};
         String[][] datos = new String[actividades.size()][2];
 
         for (int i = 0; i < actividades.size(); i++) {
@@ -2498,16 +2497,19 @@ public class MenusGUI extends JFrame {
         gbc.gridy = 0;
         gbc.insets = new Insets(0, 0, 38, 0);
 
-        JButton home = crearBotonMenu("HOME", new Color(0xC893C9), activo.equals("HOME"));
-        JButton friends = crearBotonMenu("FRIENDS HUB", new Color(0xC893C9), activo.equals("FRIENDS HUB"));
-        JButton stats = crearBotonMenu("MY STATS", new Color(0xC893C9), activo.equals("MY STATS"));
-        JButton profile = crearBotonMenu("MY PROFILE", new Color(0xC893C9), activo.equals("MY PROFILE"));
-        JButton news = crearBotonMenu("WHAT'S NEW", new Color(0xC893C9), activo.equals("WHAT'S NEW"));
+        JButton home = crearBotonMenu(txt("HOME"), new Color(0xC893C9), activo.equals("HOME"));
+        JButton friends = crearBotonMenu(txt("FRIENDS_HUB"), new Color(0xC893C9), activo.equals("FRIENDS HUB"));
+        JButton stats = crearBotonMenu(txt("MY_STATS"), new Color(0xC893C9), activo.equals("MY STATS"));
+        JButton profile = crearBotonMenu(txt("MY_PROFILE"), new Color(0xC893C9), activo.equals("MY PROFILE"));
+        JButton news = crearBotonMenu(txt("WHATS_NEW"), new Color(0xC893C9), activo.equals("WHAT'S NEW"));
         JPanel newsWrapper = crearBotonMenuConIndicador(news);
-        JButton settings = crearBotonMenu("SETTINGS", new Color(0xC893C9), activo.equals("SETTINGS"));
-        JButton logout = crearBotonMenu("LOG OUT", new Color(0xE25B57), activo.equals("LOG OUT"));
+        JButton settings = crearBotonMenu(txt("SETTINGS"), new Color(0xC893C9), activo.equals("SETTINGS"));
+        JButton logout = crearBotonMenu(txt("LOG_OUT"), new Color(0xE25B57), activo.equals("LOG OUT"));
 
-        home.addActionListener(e -> cardLayout.show(cards, CARD_MENU_PRINCIPAL));
+        home.addActionListener(e -> {
+            cards.add(menuPrincipalCard(), CARD_MENU_PRINCIPAL);
+            cardLayout.show(cards, CARD_MENU_PRINCIPAL);
+        });
 
         friends.addActionListener(e -> {
             cards.add(friendsHubCard(), CARD_FRIENDS_HUB);
@@ -2626,7 +2628,7 @@ public class MenusGUI extends JFrame {
         boton.addActionListener(e -> {
             String respuesta = menus.seleccionarNivel(numero);
 
-            if (respuesta.equals("Nivel iniciado.")) {
+            if (respuesta.equals(txt("LEVEL_STARTED"))) {
                 FlowFreeGUI juego = new FlowFreeGUI(menus, this, numero);
                 juego.setVisible(true);
             } else {
@@ -2790,7 +2792,7 @@ public class MenusGUI extends JFrame {
 
             String respuesta = menus.login(username, password);
 
-            if (respuesta.equals("Welcome")) {
+            if (respuesta.equals(txt("WELCOME"))) {
                 cards.add(menuPrincipalCard(), CARD_MENU_PRINCIPAL);
                 cardLayout.show(cards, CARD_MENU_PRINCIPAL);
             } else {
@@ -2967,7 +2969,7 @@ public class MenusGUI extends JFrame {
         gbc.gridx = 0;
         gbc.anchor = GridBagConstraints.WEST;
 
-        JLabel title = crearTexto("NEW FRIEND REQUEST!", new Color(0xE5B7E6), 13f);
+        JLabel title = crearTexto(txt("NEW_FRIEND_REQUEST"), new Color(0xE5B7E6), 13f);
 
         gbc.gridy = 0;
         gbc.insets = new Insets(0, 0, 10, 0);
@@ -2976,7 +2978,7 @@ public class MenusGUI extends JFrame {
         JLabel mensaje = new JLabel(
                 "<html><span style='color:#c893c9;'>"
                 + solicitud.getSolicitante().toUpperCase()
-                + "</span><span style='color:white;'> WANTS TO ADD YOU AS A FRIEND!</span></html>"
+                + "</span><span style='color:white;'> " + txt("WANTS_TO_ADD_YOU") + "</span></html>"
         );
         mensaje.setFont(arcadeFont.deriveFont(Font.PLAIN, 12f));
 
@@ -2990,8 +2992,8 @@ public class MenusGUI extends JFrame {
         gbc.insets = new Insets(0, 0, 14, 0);
         item.add(tiempo, gbc);
 
-        JButton accept = crearBotonTextoTransparente("[ ACCEPT ]");
-        JButton decline = crearBotonTextoTransparente("[ DECLINE ]");
+        JButton accept = crearBotonTextoTransparente("[ " + txt("ACCEPT") + " ]");
+        JButton decline = crearBotonTextoTransparente("[ " + txt("DECLINE") + " ]");
 
         accept.addActionListener(e -> {
             String respuesta = menus.aceptarSolicitudAmistad(solicitud.getId());
@@ -3029,7 +3031,7 @@ public class MenusGUI extends JFrame {
         gbc.gridx = 0;
         gbc.anchor = GridBagConstraints.WEST;
 
-        JLabel title = crearTexto("YOU WON!", new Color(0xE5B7E6), 13f);
+        JLabel title = crearTexto(txt("YOU_WON"), new Color(0xE5B7E6), 13f);
 
         gbc.gridy = 0;
         gbc.insets = new Insets(0, 0, 10, 0);
@@ -3043,7 +3045,7 @@ public class MenusGUI extends JFrame {
         }
 
         JLabel mensaje = new JLabel(
-                "<html><span style='color:white;'>YOU WON CHALLENGE AGAINST </span>"
+                "<html><span style='color:white;'>" + txt("YOU_WON_CHALLENGE_AGAINST") + " </span>"
                 + "<span style='color:#c893c9;'>"
                 + rival.toUpperCase()
                 + "</span></html>"
@@ -3055,7 +3057,7 @@ public class MenusGUI extends JFrame {
         item.add(mensaje, gbc);
 
         JLabel dificultad = new JLabel(
-                "<html><span style='color:white;'>LEVEL: </span>"
+                "<html><span style='color:white;'>" + txt("LEVEL") + ": </span>"
                 + "<span style='color:#c893c9;'>"
                 + challenge.getDificultad()
                 + "</span></html>"
@@ -3066,7 +3068,7 @@ public class MenusGUI extends JFrame {
         gbc.insets = new Insets(0, 0, 14, 0);
         item.add(dificultad, gbc);
 
-        JButton claim = crearBotonTextoTransparente("[ CLAIM REWARD ]");
+        JButton claim = crearBotonTextoTransparente("[ " + txt("CLAIM_REWARD") + " ]");
 
         claim.addActionListener(e -> {
             String respuesta = menus.claimChallengeReward(challenge.getId());
@@ -3082,5 +3084,4 @@ public class MenusGUI extends JFrame {
 
         return item;
     }
-
 }

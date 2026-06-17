@@ -90,7 +90,7 @@ public class FlowFreeGUI extends JFrame {
         this.challengeId = challengeId;
         this.audioManager = new AudioManager(menus);
 
-        setTitle("Flow Free");
+        setTitle(txt("FLOW_FREE"));
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
         Dimension screen = Toolkit.getDefaultToolkit().getScreenSize();
@@ -108,6 +108,25 @@ public class FlowFreeGUI extends JFrame {
         add(contenedor);
 
         SwingUtilities.invokeLater(() -> iniciarFlujoNivelSeleccionado());
+    }
+
+    private String txt(String key) {
+        return Idioma.get(key, menus);
+    }
+
+    private String obtenerImagenPeterPorIdioma() {
+        if (menus != null && menus.getUsuarioActual() != null) {
+            String idioma = menus.getUsuarioActual().getIdioma();
+
+            if (idioma != null &&
+                (idioma.equalsIgnoreCase("Spanish")
+                || idioma.equalsIgnoreCase("Español")
+                || idioma.equalsIgnoreCase("Espanol"))) {
+                return "mensaje_peter.png";
+            }
+        }
+
+        return "peters_message.png";
     }
 
     private void mostrarTransicion(String nombreImagen, Runnable accionDespues) {
@@ -144,7 +163,7 @@ public class FlowFreeGUI extends JFrame {
 
         panelTablero = new PanelTablero(juego, lblEstado, this);
 
-        JButton btnReiniciar = new JButton("Reiniciar");
+        JButton btnReiniciar = new JButton(txt("RESTART"));
         btnReiniciar.setFont(new Font("Arial", Font.BOLD, 18));
         btnReiniciar.addActionListener(e -> {
             juego.reiniciar();
@@ -172,12 +191,12 @@ public class FlowFreeGUI extends JFrame {
         barra.setLayout(new BoxLayout(barra, BoxLayout.Y_AXIS));
         barra.setBorder(BorderFactory.createEmptyBorder(25, 14, 25, 14));
 
-        JButton btnVolume = crearBotonBarra("volume.png", "SFX Volume");
-        JButton btnSoundOff = crearBotonBarra("sound_off.png", "Mute Sound");
-        JButton btnMusic = crearBotonBarra("music.png", "Music Volume");
-        JButton btnHome = crearBotonBarra("home.png", "Home");
-        JButton btnRestart = crearBotonBarra("restart_level.png", "Restart Level");
-        JButton btnReverse = crearBotonBarra("reverse_one_move.png", "Undo Last Move");
+        JButton btnVolume = crearBotonBarra("volume.png", txt("TOOLTIP_SFX_VOLUME"));
+        JButton btnSoundOff = crearBotonBarra("sound_off.png", txt("TOOLTIP_MUTE_SOUND"));
+        JButton btnMusic = crearBotonBarra("music.png", txt("TOOLTIP_MUSIC_VOLUME"));
+        JButton btnHome = crearBotonBarra("home.png", txt("TOOLTIP_HOME"));
+        JButton btnRestart = crearBotonBarra("restart_level.png", txt("TOOLTIP_RESTART_LEVEL"));
+        JButton btnReverse = crearBotonBarra("reverse_one_move.png", txt("TOOLTIP_UNDO_LAST_MOVE"));
 
         btnVolume.addActionListener(e -> audioManager.mostrarControlVolumenSFX(this));
 
@@ -242,8 +261,8 @@ public class FlowFreeGUI extends JFrame {
     private void confirmarSalidaAlMenu() {
         int respuesta = JOptionPane.showConfirmDialog(
                 this,
-                "Do you want to abandon this game?\nYour progress for this unfinished level will not be saved.",
-                "Leave Game?",
+                txt("LEAVE_GAME_MESSAGE"),
+                txt("LEAVE_GAME"),
                 JOptionPane.OK_CANCEL_OPTION,
                 JOptionPane.WARNING_MESSAGE
         );
@@ -290,8 +309,8 @@ public class FlowFreeGUI extends JFrame {
             } else {
                 JOptionPane.showMessageDialog(
                         this,
-                        "All levels completed!",
-                        "Game Completed",
+                        txt("ALL_LEVELS_COMPLETED"),
+                        txt("GAME_COMPLETED"),
                         JOptionPane.INFORMATION_MESSAGE
                 );
 
@@ -316,9 +335,9 @@ public class FlowFreeGUI extends JFrame {
         }
 
         lblEstado.setText(
-                "Level " + juego.getNivelActual()
+                txt("LEVEL_STATUS") + " " + juego.getNivelActual()
                 + " - " + juego.getNombreGrupoNivel()
-                + " | Time: " + juego.getSegundosJugados() + "s"
+                + " | " + txt("TIME_STATUS") + ": " + juego.getSegundosJugados() + txt("SECONDS_SHORT")
         );
     }
 
@@ -338,7 +357,7 @@ public class FlowFreeGUI extends JFrame {
             setBackground(Color.BLACK);
 
             try {
-                imagenFondo = ImageIO.read(new File(ASSETS_DIR + "peters_message.png"));
+                imagenFondo = ImageIO.read(new File(ASSETS_DIR + obtenerImagenPeterPorIdioma()));
             } catch (IOException e) {
                 imagenFondo = null;
             }
@@ -347,7 +366,7 @@ public class FlowFreeGUI extends JFrame {
             panelBoton.setOpaque(false);
             panelBoton.setBorder(BorderFactory.createEmptyBorder(0, 0, 35, 0));
 
-            JButton btnContinue = new JButton("CONTINUE");
+            JButton btnContinue = new JButton(txt("CONTINUE"));
             btnContinue.setFont(new Font("Monospaced", Font.BOLD, 22));
             btnContinue.setForeground(Color.DARK_GRAY);
             btnContinue.setBackground(new Color(0xD4D4D4));
@@ -507,8 +526,8 @@ public class FlowFreeGUI extends JFrame {
 
                         JOptionPane.showMessageDialog(
                                 PanelTablero.this,
-                                "Level " + nivelCompletado + " Completed!\nTime: " + tiempoFinal + " seconds",
-                                "Level Completed",
+                                ventana.txt("LEVEL_STATUS") + " " + nivelCompletado + " " + ventana.txt("COMPLETED") + "!\n" + ventana.txt("TIME_STATUS") + ": " + tiempoFinal + " " + ventana.txt("SECONDS"),
+                                ventana.txt("LEVEL_COMPLETED"),
                                 JOptionPane.INFORMATION_MESSAGE
                         );
 
@@ -719,24 +738,24 @@ public class FlowFreeGUI extends JFrame {
             int score = menus.calcularPuntajeChallenge(challenge.getDificultad(), false);
 
             texto =
-                    "CHALLENGE RESULTS\n\n"
-                    + actual + " TIME\n"
+                    txt("CHALLENGE_RESULTS") + "\n\n"
+                    + actual + " " + txt("TIME") + "\n"
                     + formatearTiempo(tiempoFinal) + "\n\n"
-                    + "SCORE\n"
+                     + txt("SCORE") + "\n"
                     + score;
         } else {
             texto =
-                    "CHALLENGE RESULTS\n\n"
-                    + challenge.getJugador1().toUpperCase() + " TIME\n"
+                    txt("CHALLENGE_RESULTS") + "\n\n"
+                    + challenge.getJugador1().toUpperCase() + " " + txt("TIME") + "\n"
                     + formatearTiempo(challenge.getTiempoJugador1()) + "\n"
-                    + "SCORE: " + challenge.getScoreJugador1() + "\n\n"
-                    + challenge.getJugador2().toUpperCase() + " TIME\n"
+                    + txt("SCORE") + ": " + challenge.getScoreJugador1() + "\n\n"
+                    + challenge.getJugador2().toUpperCase() + " " + txt("TIME") + "\n"
                     + formatearTiempo(challenge.getTiempoJugador2()) + "\n"
-                    + "SCORE: " + challenge.getScoreJugador2() + "\n\n"
-                    + "WINNER\n"
+                    + txt("SCORE") + ": " + challenge.getScoreJugador2() + "\n\n"
+                    + txt("WINNER") + "\n"
                     + challenge.getGanador().toUpperCase() + "\n\n"
-                    + "Looks like Peter's arcade\n"
-                    + "trusts " + challenge.getGanador().toUpperCase() + " more today..";
+                    + txt("PETERS_ARCADE_TRUSTS_1") + "\n"
+                    + txt("PETERS_ARCADE_TRUSTS_2") + " " + challenge.getGanador().toUpperCase() + " " + txt("PETERS_ARCADE_TRUSTS_3");
         }
 
         contenedor.add(new PanelResultadoChallenge(texto), "RESULTADO_CHALLENGE");
@@ -783,7 +802,7 @@ public class FlowFreeGUI extends JFrame {
             gbc.insets = new Insets(0, 0, 30, 0);
             contenido.add(area, gbc);
 
-            JButton aceptar = new JButton("ACCEPT");
+            JButton aceptar = new JButton(txt("ACCEPT"));
             aceptar.setFont(new Font("Monospaced", Font.BOLD, 16));
             aceptar.setBackground(new Color(0xD4D4D4));
             aceptar.setForeground(Color.BLACK);
@@ -817,5 +836,4 @@ public class FlowFreeGUI extends JFrame {
             }
         }
     }
-
 }
